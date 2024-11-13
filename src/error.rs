@@ -6,10 +6,10 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
     // `#[error(not(source))]` below tells `derive_more` that `embassy_executor::SpawnError` does
-    // not implement Rust's `core::error::Error` trait.  It should, but Rust's `Error` only recently
-    // moved from `std` (which is not available in bare-metal development) to `core` (which is).
-    // Maybe a future update of `embassy_executor::SpawnError` will implement `core::error::Error`,
-    // making this unnecessary.
+    // not implement Rust's `core::error::Error` trait.  `SpawnError` should, but Rust's `Error`
+    // only recently moved from `std` (which is not available in bare-metal development) to `core`
+    // (which is). Perhaps a future update of `embassy_executor::SpawnError` will implement
+    // `core::error::Error` which will make this unnecessary.
     #[display("{_0:?}")]
     TaskSpawn(#[error(not(source))] embassy_executor::SpawnError),
 }

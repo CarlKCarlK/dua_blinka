@@ -9,6 +9,6 @@ mod led;
 mod never;
 pub mod shared_const;
 
-pub use button::{Button, PressKind};
+pub use button::{Button, PressDuration};
 pub use led::{Led, LedMode};
 pub use never::Never;

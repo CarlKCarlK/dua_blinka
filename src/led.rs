@@ -10,7 +10,7 @@ use enum_iterator::{cardinality, Sequence};
 use crate::shared_const::*;
 pub use mode::LedMode;
 
-/// Type representing the physical LED and its state.
+/// Type representing the physical LED and its "display" mode.
 pub struct Led {
     mode: LedMode,
     sender: &'static Signal<CriticalSectionRawMutex, LedMode>,
@@ -18,7 +18,7 @@ pub struct Led {
 
 impl Led {
     /// Constructor.  Inject:
-    ///     * the GPIO pin where the LED button can be found.
+    ///     * the GPIO pin where the LED is connected.
     ///     * `embassy_executor`'s task spawner, which enables creating new cooperative tasks,
     ///       running them on the async `Executor`.
     ///     * `Signal`, which is like a `Channel` or a "hotline" to communicate from one task to
@@ -39,7 +39,7 @@ impl Led {
 
     /// Advances `state` from `Off` -> `FastFlash` -> `SlowFlash` -> `On` -> `Off` -> ..., returning
     /// the state `Led` was in prior to advancement.
-    pub async fn advance_state(&mut self) -> LedMode {
+    pub async fn advance_mode(&mut self) -> LedMode {
         // Invariant: `LedState` `enum` must have at least 1 variant
         debug_assert!(cardinality::<LedMode>() > 0);
 
@@ -90,12 +90,12 @@ async fn led_driver(pin: AnyPin, receiver: &'static Signal<CriticalSectionRawMut
             // Flash the LED quickly and wait for the next message.
             Lm::FastFlash => {
                 led_pin.toggle();
-                select(Timer::after_millis(FAST_FLASH_DELAY_IN_MS), receiver.wait()).await;
+                select(Timer::after(FAST_FLASH_DELAY), receiver.wait()).await;
             },
             // Flash the LED slowly and wait for the next message.
             Lm::SlowFlash => {
                 led_pin.toggle();
-                select(Timer::after_millis(SLOW_FLASH_DELAY_IN_MS), receiver.wait()).await;
+                select(Timer::after(SLOW_FLASH_DELAY), receiver.wait()).await;
             },
             // Leave the LED on continuously and wait for the next message.
             Lm::On => {

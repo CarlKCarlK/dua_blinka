@@ -1,5 +1,5 @@
 [package]
-authors = ["Carl Kadie", "Curly <u007d@humanenginuity.com>"]
+authors = ["Curly <u007d@humanenginuity.com>"]
 categories = []
 description = "<describe crate here>"
 edition = "2021"

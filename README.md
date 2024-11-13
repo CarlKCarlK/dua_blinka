@@ -24,7 +24,12 @@ Seattle Rust User Group in November 2024.
 
 3. Set up Hardware:  Set up as per [schematic diagram](https://app.cirkitdesigner.com/project/c8efdf17-e924-4550-8c7a-da5c56bd626e)
 
-4. Test Your Setup:
+4. Teach `rustc` how to compile for the Raspberry Pi Pico's RP2040 processor:
+   ```
+   rustup install target thumbv6m-none-eabi
+   ```
+
+5. Test Your Setup:
    After `git clone`ing this repo, `cd` into the crate root folder and type `cargo run` to verify your
    board is set up correctly.
 
@@ -39,11 +44,10 @@ FastFlash --> SlowFlash --> On --> Off --> FastFlash
 
 Long-pressing the button always resets to the first (FastFlash) LED state.
 
-5. Begin debugging:
+6. Begin debugging:
    `git checkout bugs` to switch to a buggy version of this repo.
    `cargo run` will compile and flash the buggy code.  The LED will no longer flash.  Now it is up to
    you to troubleshoot, find and fix the bug(s).
-
 
 ## License
 Licensed under either:
