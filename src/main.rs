@@ -14,7 +14,8 @@ use lib::{Button, Led, LedMode, Never, PressDuration};
 use panic_probe as _;
 
 use lib::error::Result;
-use signal::SIGNAL;
+use signal::SIGNAL0;
+use signal::SIGNAL1;
 
 // In bare-metal development, your application is launched by the processor's boot loader (from ROM).
 // The boot loader typically jumps (doesn't make a function call) to your application's entry point.
@@ -40,12 +41,15 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // We have the LED wired to GPIO pin 2.  `degrade()` converts the `PIN_2` type (too specific for
     // the `Led` type we're about to construct) to an `AnyPin` type with a value of 2.  This allows
     // us to avoid hard-coding the GPIO pin number inside the `Led` type.
-    let led_pin = peripherals.PIN_2.degrade();
+    let led_pin0 = peripherals.PIN_2.degrade();
+    let led_pin1 = peripherals.PIN_3.degrade();
+
     // Construct the `Led` type.  `led_pin` is explained above.  `spawner` is the type which knows
     // how to create new tasks on the `embassy_executor` async runtime (analogous to spawning a new
     // thread in an OS).  Lastly, `SIGNAL` is a "hotline" allowing `Led` to communicate with other
     // contexts (in our scenario, `task`s).
-    let mut led = Led::new(led_pin, spawner, &SIGNAL)?;
+    let mut led0 = Led::new(led_pin0, spawner, &SIGNAL0)?;
+    let mut led1 = Led::new(led_pin1, spawner, &SIGNAL1)?;
     // cmk understand how we can give away spawner under the ownership rules. Also, what more can we do with spawner?
     // cmk understand SIGNAL
 
@@ -61,10 +65,10 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
         defmt::info!("State: {:?}", state);
         state = match state {
             State::First => State::Fast,
-            State::Fast => fast_state(&mut button, &mut led).await,
-            State::Slow => slow_state(&mut button, &mut led).await,
-            State::AlwaysOn => always_on_state(&mut button, &mut led).await,
-            State::AlwaysOff => always_off_state(&mut button, &mut led).await,
+            State::Fast => fast_state(&mut button, &mut led0, &mut led1).await,
+            State::Slow => slow_state(&mut button, &mut led0, &mut led1).await,
+            State::AlwaysOn => always_on_state(&mut button, &mut led0, &mut led1).await,
+            State::AlwaysOff => always_off_state(&mut button, &mut led0, &mut led1).await,
             State::Last => State::First,
         };
     }
@@ -79,32 +83,36 @@ enum State {
     AlwaysOff,
     Last,
 }
-async fn fast_state(button: &mut Button<'_>, led: &mut Led) -> State {
-    led.set_mode(LedMode::default());
+async fn fast_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.set_mode(LedMode::default());
+    led1.set_mode(LedMode::On);
     match button.wait_for_press().await {
         PressDuration::Short => State::Slow,
         PressDuration::Long => State::First,
     }
 }
 
-async fn slow_state(button: &mut Button<'_>, led: &mut Led) -> State {
-    led.set_mode(LedMode::SlowFlash);
+async fn slow_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.set_mode(LedMode::SlowFlash);
+    led1.set_mode(LedMode::On);
     match button.wait_for_press().await {
         PressDuration::Short => State::AlwaysOn,
         PressDuration::Long => State::First,
     }
 }
 
-async fn always_on_state(button: &mut Button<'_>, led: &mut Led) -> State {
-    led.set_mode(LedMode::On);
+async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.set_mode(LedMode::On);
+    led1.set_mode(LedMode::Off);
     match button.wait_for_press().await {
         PressDuration::Short => State::AlwaysOff,
         PressDuration::Long => State::First,
     }
 }
 
-async fn always_off_state(button: &mut Button<'_>, led: &mut Led) -> State {
-    led.set_mode(LedMode::Off);
+async fn always_off_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.set_mode(LedMode::Off);
+    led1.set_mode(LedMode::Off);
     match button.wait_for_press().await {
         PressDuration::Short => State::Fast,
         PressDuration::Long => State::First,

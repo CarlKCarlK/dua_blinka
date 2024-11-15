@@ -6,4 +6,5 @@ use lib::LedMode;
 //    other variable, providing loose-coupling and improved testability.
 // `SIGNAL` is synchronized (does not violate Rust's "shared XOR mutable" borrow-checker rule)
 // *but* as a global, does not support re-entrancy (e.g. re-entrant testing)
-pub static SIGNAL: Signal<CriticalSectionRawMutex, LedMode> = Signal::new();
+pub static SIGNAL0: Signal<CriticalSectionRawMutex, LedMode> = Signal::new();
+pub static SIGNAL1: Signal<CriticalSectionRawMutex, LedMode> = Signal::new();

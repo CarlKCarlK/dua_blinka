@@ -76,7 +76,7 @@ impl Led {
 ///      blocked (!)
 /// iv) does not consume any computing cycles when "yield"ing.  Important for battery-powered and
 ///     limited-compute-capability devices.
-#[embassy_executor::task]
+#[embassy_executor::task(pool_size = 4)]
 async fn led_driver(
     pin: AnyPin,
     receiver: &'static Signal<CriticalSectionRawMutex, LedMode>,
