@@ -44,7 +44,7 @@ impl Button<'_> {
         // Debounce the button's release.
         self.debounce_delay().await;
 
-        //defmt::info!("Button press duration: {}ms", duration_of_press.as_millis());
+        //defmt::info!("Button press duration: {}ms", press_duration.as_millis());
 
         // Determine if the duration of the button press was a `Short` or `Long`
         duration_of_press.into()
