@@ -10,7 +10,7 @@ mod signal;
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
-use lib::{Button, Led, LedMode, Never};
+use lib::{Button, Led, LedMode, Never, PressDuration};
 use panic_probe as _;
 
 use lib::error::Result;
@@ -50,24 +50,63 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // cmk understand SIGNAL
 
     let button_pin = peripherals.PIN_13.degrade();
-    let mut button = Button::new(button_pin);
 
     // Even though we are `loop`ing forever, the loop will spend most of its time paused, waiting
     // for the user to press a button.  This saves huge amounts of power over "busy-waiting" and
     // makes an embedded device energy-efficient (suitable to be battery-powered, for example).
     // cmk could I do my state machine stuff here?
+    let mut button = Button::new(button_pin);
+    let mut state = State::First;
     loop {
-        // Wait for the user to press a button.  The `button` type will classify the button-press
-        // as either "short" or "long".
-        let press = button.wait_for_press().await;
-
-        use lib::PressDuration as Pd;
-        match press {
-            // Long press: reset `Led` to its default mode.
-            Pd::Long => led.set_mode(LedMode::default()),
-            // Short press: advance `Led` to its next mode, wrapping back to the first mode if
-            // `Led` is currently in its last-defined mode.
-            Pd::Short => led.advance_mode(),
+        defmt::info!("State: {:?}", state);
+        state = match state {
+            State::First => State::Fast,
+            State::Fast => fast_state(&mut button, &mut led).await,
+            State::Slow => slow_state(&mut button, &mut led).await,
+            State::AlwaysOn => always_on_state(&mut button, &mut led).await,
+            State::AlwaysOff => always_off_state(&mut button, &mut led).await,
+            State::Last => State::First,
         };
+    }
+}
+
+#[derive(Debug, defmt::Format)]
+enum State {
+    First,
+    Fast,
+    Slow,
+    AlwaysOn,
+    AlwaysOff,
+    Last,
+}
+async fn fast_state(button: &mut Button<'_>, led: &mut Led) -> State {
+    led.set_mode(LedMode::default());
+    match button.wait_for_press().await {
+        PressDuration::Short => State::Slow,
+        PressDuration::Long => State::First,
+    }
+}
+
+async fn slow_state(button: &mut Button<'_>, led: &mut Led) -> State {
+    led.set_mode(LedMode::SlowFlash);
+    match button.wait_for_press().await {
+        PressDuration::Short => State::AlwaysOn,
+        PressDuration::Long => State::First,
+    }
+}
+
+async fn always_on_state(button: &mut Button<'_>, led: &mut Led) -> State {
+    led.set_mode(LedMode::On);
+    match button.wait_for_press().await {
+        PressDuration::Short => State::AlwaysOff,
+        PressDuration::Long => State::First,
+    }
+}
+
+async fn always_off_state(button: &mut Button<'_>, led: &mut Led) -> State {
+    led.set_mode(LedMode::Off);
+    match button.wait_for_press().await {
+        PressDuration::Short => State::Fast,
+        PressDuration::Long => State::First,
     }
 }

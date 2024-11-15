@@ -6,8 +6,12 @@ DEFMT_LOG = "debug"
 
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 runner = "probe-rs run --chip=RP2040"
+
 rustflags = [
-    "-C", "link-arg=-Tlink.x",
-    "-C", "link-arg=-Tlink-rp.x",
-    "-C", "link-arg=-Tdefmt.x"
+    "-C",
+    "link-arg=-Tlink.x",
+    "-C",
+    "link-arg=-Tlink-rp.x",
+    "-C",
+    "link-arg=-Tdefmt.x",
 ]
