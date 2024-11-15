@@ -18,8 +18,8 @@ pub enum PressDuration {
 impl From<Duration> for PressDuration {
     fn from(duration: Duration) -> Self {
         match duration >= LONG_PRESS_DURATION {
-            true => PressDuration::Long,
-            false => PressDuration::Short,
+            true => Self::Long,
+            false => Self::Short,
         }
     }
 }

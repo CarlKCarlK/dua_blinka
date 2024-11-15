@@ -7,8 +7,9 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal}
 use embassy_time::Timer;
 use enum_iterator::{cardinality, Sequence};
 
-use crate::shared_const::*;
 pub use mode::LedMode;
+
+use crate::shared_const::{FAST_FLASH_DELAY, SLOW_FLASH_DELAY};
 
 /// Type representing the physical LED and its "display" mode.
 pub struct Led {
@@ -33,13 +34,14 @@ impl Led {
             mode: LedMode::default(),
             sender: signal,
         };
-        spawner.spawn(led_driver(pin, &signal, led.mode))?;
+        spawner.spawn(led_driver(pin, signal, led.mode))?;
         Ok(led)
     }
 
     /// Advances `state` from `Off` -> `FastFlash` -> `SlowFlash` -> `On` -> `Off` -> ..., returning
     /// the state `Led` was in prior to advancement.
-    pub async fn advance_mode(&mut self) -> LedMode {
+    pub fn advance_mode(&mut self) -> LedMode {
+        // cmk not async
         // Invariant: `LedState` `enum` must have at least 1 variant
         debug_assert!(cardinality::<LedMode>() > 0);
 
@@ -54,7 +56,8 @@ impl Led {
 
     /// Force the LED into the provided `LedMode`, returning the state `Led` was in prior to the
     /// `set_mode()` call.
-    pub async fn set_mode(&mut self, mode: LedMode) -> LedMode {
+    pub fn set_mode(&mut self, mode: LedMode) -> LedMode {
+        // cmk not async
         let old_mode = self.mode;
 
         self.mode = mode;
@@ -68,7 +71,7 @@ impl Led {
 /// LED.  A `task` is a bit like an operating system (OS) thread, but differs in important ways.  A
 /// `task`:
 /// i) isn't controlled by an OS--there is no OS, remember since we are doing bare-metal development
-/// ii) is co-operatively scheduled (not pre-emptively scheduled by an OS)
+/// ii) is co-operatively scheduled (not preemptively scheduled by an OS)
 /// iii) must never "block", but "yield" instead (via the `await` keyword) or all `task`s will be
 ///      blocked (!)
 /// iv) does not consume any computing cycles when "yield"ing.  Important for battery-powered and

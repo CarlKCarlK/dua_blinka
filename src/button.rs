@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, reason = "cmk")]
 mod press_duration;
 
 use crate::shared_const::BUTTON_DEBOUNCE_DELAY;
@@ -14,6 +14,7 @@ pub struct Button<'a> {
 
 impl Button<'_> {
     /// Constructor.  Inject the GPIO pin where the hardware button can be found.
+    #[must_use]
     pub fn new(pin: AnyPin) -> Self {
         Button {
             // Define the pin as an input with a "default" of `Level::Low`, or no voltage
