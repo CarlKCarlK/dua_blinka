@@ -10,15 +10,15 @@ Seattle Rust User Group in November 2024.
 
    ### Linux
 
-   # Debian-based
+   #### Debian-based
 
        `sudo apt install -y pkg-config libudev-dev cmake git`
 
-   # RPM-based
+   #### RPM-based
 
        `dnf install libusbx-devel libudev-devel cmake git`
 
-   ### macOS
+   #### macOS
 
 * No platform-specific requirements.  Proceed to `All Platforms`, below.
 
@@ -28,34 +28,34 @@ Seattle Rust User Group in November 2024.
 
 ### All platforms
 
-   i. Install `probe-rs`:
-   `cargo install probe-rs --locked`
+1. Install `probe-rs`:
+   `cargo install probe-rs-tools --locked`
 
-3. Set up Hardware:  Set up as per [schematic diagram](https://app.cirkitdesigner.com/project/c8efdf17-e924-4550-8c7a-da5c56bd626e)
+2. Set up Hardware:  Set up as per [schematic diagram](https://app.cirkitdesigner.com/project/c8efdf17-e924-4550-8c7a-da5c56bd626e)
 
-4. Teach `rustc` how to compile for the Raspberry Pi Pico's RP2040 processor:
+3. Teach `rustc` how to compile for the Raspberry Pi Pico's RP2040 processor:
 
-   ```
-   rustup target add thumbv6m-none-eabi
-   ```
+   ```bash
+    rustup target add thumbv6m-none-eabi
+    ```
 
-5. Test Your Setup:
+4. Test Your Setup:
    After `git clone`ing this repo, `cd` into the crate root folder and type `cargo run` to verify your
    board is set up correctly.
 
-If the LED is flashing, your board is set up.
+   If the LED is flashing, your board is set up.
 
-Pressing the button will change the LED flashing mode in the following sequence:
-LED flashing modes:
+   Pressing the button will change the LED flashing mode in the following sequence:
+   LED flashing modes:
 
-```mermaid
-flowchart LR
-FastFlash --> SlowFlash --> On --> Off --> FastFlash
-```
+   ```mermaid
+   flowchart LR
+   FastFlash --> SlowFlash --> On --> Off --> FastFlash
+   ```
 
-Long-pressing the button always resets to the first (FastFlash) LED state.
+   Long-pressing the button always resets to the first (FastFlash) LED state.
 
-6. Begin debugging:
+5. Begin debugging:
    `git checkout bugs` to switch to a buggy version of this repo.
    `cargo run` will compile and flash the buggy code.  The LED will no longer flash.  Now it is up to
    you to troubleshoot, find and fix the bug(s).
