@@ -4,6 +4,7 @@
 * If you hold, it sends SOS.
 * Works by sending a schedule of on/off times. The schedule is a heapless Vec of Durations.
 * When you hold, it reacts as soon as you've held long enough.
+* Video: <https://youtu.be/_iQKyh3FGX4>
 
 This project is based on <https://github.com/U007D/blinky_probe/tree/main> from the
 Embedded Rust Hardware Debug Probe workshop taught at the
