@@ -1,4 +1,4 @@
-use crate::shared_const::Vec;
+use crate::shared_const::Schedule;
 use defmt::info;
 use embassy_executor::{SpawnError, Spawner};
 use embassy_futures::select::{select, Either};
@@ -8,8 +8,8 @@ use embassy_time::Timer;
 
 /// Type representing the physical LED and its "display" mode.
 pub struct Led {
-    schedule: Vec,
-    sender: &'static Signal<CriticalSectionRawMutex, Vec>,
+    schedule: Schedule,
+    sender: &'static Signal<CriticalSectionRawMutex, Schedule>,
 }
 
 impl Led {
@@ -23,8 +23,8 @@ impl Led {
     pub fn new(
         pin: AnyPin,
         spawner: Spawner,
-        signal: &'static Signal<CriticalSectionRawMutex, Vec>,
-        schedule: Vec,
+        signal: &'static Signal<CriticalSectionRawMutex, Schedule>,
+        schedule: Schedule,
     ) -> Result<Self, SpawnError> {
         let led = Self {
             schedule,
@@ -36,7 +36,7 @@ impl Led {
 
     /// Force the LED into the provided `LedMode`, returning the state `Led` was in prior to the
     /// `set_mode()` call.
-    pub fn schedule(&mut self, schedule: Vec) {
+    pub fn schedule(&mut self, schedule: Schedule) {
         self.schedule = schedule;
         self.sender.signal(self.schedule.clone()); // cmk why set schedule and send signal?
     }
@@ -60,9 +60,8 @@ impl Led {
 #[expect(clippy::arithmetic_side_effects, reason = "schedule.len() is not zero.")]
 async fn led_driver(
     pin: AnyPin,
-    // cmk instead of this could pass a vector (up to some fixed length) of schedule
-    receiver: &'static Signal<CriticalSectionRawMutex, Vec>,
-    mut schedule: Vec,
+    receiver: &'static Signal<CriticalSectionRawMutex, Schedule>,
+    mut schedule: Schedule,
 ) -> ! {
     // Define `led_pin` as an `Output` pin (meaning the microcontroller will supply 3.3V when its
     // value is set to `Level::High`.

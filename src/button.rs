@@ -1,5 +1,5 @@
-#![allow(dead_code, reason = "cmk")]
 mod press_duration;
+// cmk fast response to button hold?
 
 use crate::shared_const::BUTTON_DEBOUNCE_DELAY;
 use embassy_rp::gpio::{AnyPin, Input, Pull};
@@ -62,11 +62,11 @@ impl Button<'_> {
         self
     }
 
-    /// Pause until voltage is absent on the input pin.
-    async fn wait_for_low(&mut self) -> &mut Self {
-        self.pin.wait_for_low().await;
-        self
-    }
+    // /// Pause until voltage is absent on the input pin.
+    // async fn wait_for_low(&mut self) -> &mut Self {
+    //     self.pin.wait_for_low().await;
+    //     self
+    // }
 
     /// Pause until voltage on the input pin begins to go away.
     async fn wait_for_falling_edge(&mut self) -> &mut Self {
@@ -74,9 +74,9 @@ impl Button<'_> {
         self
     }
 
-    /// Pause until voltage on the input pin begins to appear.
-    async fn wait_for_rising_edge(&mut self) -> &mut Self {
-        self.pin.wait_for_rising_edge().await;
-        self
-    }
+    // /// Pause until voltage on the input pin begins to appear.
+    // async fn wait_for_rising_edge(&mut self) -> &mut Self {
+    //     self.pin.wait_for_rising_edge().await;
+    //     self
+    // }
 }

@@ -7,4 +7,4 @@ pub const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
 pub const FAST_FLASH_DELAY: Duration = Duration::from_millis(250);
 pub const SLOW_FLASH_DELAY: Duration = Duration::from_millis(750);
 
-pub type Vec = heapless::Vec<Duration, 16>;
+pub type Schedule = heapless::Vec<Duration, 20>;

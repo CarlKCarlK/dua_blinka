@@ -1,9 +1,6 @@
-#![allow(dead_code, reason = "cmk")]
 #![no_std]
 #![no_main]
 #![allow(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
-
-// cmk is cargo embassy now published?
 
 mod signal;
 
@@ -11,7 +8,7 @@ use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
 use embassy_time::Duration;
-use lib::shared_const::Vec;
+use lib::shared_const::Schedule;
 use lib::{Button, Led, Never, PressDuration};
 use panic_probe as _;
 
@@ -25,8 +22,8 @@ use signal::SIGNAL1;
 // function call, the boot loader ensures there's nothing on the stack for your program to return to.
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
-    let err = inner_main(spawner).await.unwrap_err(); // cmk what is unwrap_err?
-                                                      // cmk get debug print and panics showing up in the console
+    // If it returns, something went wrong.
+    let err = inner_main(spawner).await.unwrap_err();
     panic!("{err}");
 }
 
@@ -38,7 +35,7 @@ async fn main(spawner: Spawner) -> ! {
 async fn inner_main(spawner: Spawner) -> Result<Never> {
     // Receive a definition of all the peripherals inside the `RP2040` processor.
     let peripherals: embassy_rp::Peripherals =
-        embassy_rp::init(embassy_rp::config::Config::default()); // cmk understand default::default vs this
+        embassy_rp::init(embassy_rp::config::Config::default());
 
     // We have the LED wired to GPIO pin 2.  `degrade()` converts the `PIN_2` type (too specific for
     // the `Led` type we're about to construct) to an `AnyPin` type with a value of 2.  This allows
@@ -50,32 +47,25 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // how to create new tasks on the `embassy_executor` async runtime (analogous to spawning a new
     // thread in an OS).  Lastly, `SIGNAL` is a "hotline" allowing `Led` to communicate with other
     // contexts (in our scenario, `task`s).
-    let mut led0 = Led::new(led_pin0, spawner, &SIGNAL0, slow_even())?;
-    let mut led1 = Led::new(led_pin1, spawner, &SIGNAL1, slow_odd())?;
-    // cmk understand how we can give away spawner under the ownership rules. Also, what more can we do with spawner?
-    // cmk understand SIGNAL
+    let mut led0 = Led::new(led_pin0, spawner, &SIGNAL0, slow_even()?)?;
+    let mut led1 = Led::new(led_pin1, spawner, &SIGNAL1, slow_odd()?)?;
 
     let button_pin = peripherals.PIN_13.degrade();
 
     // Even though we are `loop`ing forever, the loop will spend most of its time paused, waiting
     // for the user to press a button.  This saves huge amounts of power over "busy-waiting" and
-    // makes an embedded device energy-efficient (suitable to be battery-powered, for example).
-    // cmk could I do my state machine stuff here?
     let mut button = Button::new(button_pin);
     let mut state = State::First;
     loop {
         defmt::info!("State: {:?}", state);
         state = match state {
-            State::First => State::FastAlternating,
-            State::FastAlternating => {
-                fast_alternating_state(&mut button, &mut led0, &mut led1).await
-            },
-            State::FastTogether => fast_together_state(&mut button, &mut led0, &mut led1).await,
-            State::SlowAlternating => {
-                slow_alternating_state(&mut button, &mut led0, &mut led1).await
-            },
-            State::AlwaysOn => always_on_state(&mut button, &mut led0, &mut led1).await,
-            State::AlwaysOff => always_off_state(&mut button, &mut led0, &mut led1).await,
+            State::First => State::FastAlternate,
+            State::FastAlternate => fast_alternate_state(&mut button, &mut led0, &mut led1).await?,
+            State::FastTogether => fast_together_state(&mut button, &mut led0, &mut led1).await?,
+            State::SlowAlternate => slow_alternate_state(&mut button, &mut led0, &mut led1).await?,
+            State::Sos => sos_state(&mut button, &mut led0, &mut led1).await?,
+            State::AlwaysOn => always_on_state(&mut button, &mut led0, &mut led1).await?,
+            State::AlwaysOff => always_off_state(&mut button, &mut led0, &mut led1).await?,
             State::Last => State::First,
         };
     }
@@ -84,92 +74,130 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
 #[derive(Debug, defmt::Format)]
 enum State {
     First,
-    FastAlternating,
+    FastAlternate,
     FastTogether,
-    SlowAlternating,
+    SlowAlternate,
+    Sos,
     AlwaysOn,
     AlwaysOff,
     Last,
 }
 
-async fn fast_alternating_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.schedule(fast_even());
-    led1.schedule(fast_odd());
+async fn fast_alternate_state(
+    button: &mut Button<'_>,
+    led0: &mut Led,
+    led1: &mut Led,
+) -> Result<State> {
+    led0.schedule(fast_even()?);
+    led1.schedule(fast_odd()?);
     match button.wait_for_press().await {
-        PressDuration::Short => State::FastTogether,
-        PressDuration::Long => State::First,
+        PressDuration::Short => Ok(State::FastTogether),
+        PressDuration::Long => Ok(State::Sos),
     }
 }
 
-async fn fast_together_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.schedule(fast_even());
-    led1.schedule(fast_even());
+async fn fast_together_state(
+    button: &mut Button<'_>,
+    led0: &mut Led,
+    led1: &mut Led,
+) -> Result<State> {
+    led0.schedule(fast_even()?);
+    led1.schedule(fast_even()?);
     match button.wait_for_press().await {
-        PressDuration::Short => State::SlowAlternating,
-        PressDuration::Long => State::First,
+        PressDuration::Short => Ok(State::SlowAlternate),
+        PressDuration::Long => Ok(State::Sos),
     }
 }
 
-async fn slow_alternating_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.schedule(slow_even());
-    led1.schedule(slow_odd());
+async fn slow_alternate_state(
+    button: &mut Button<'_>,
+    led0: &mut Led,
+    led1: &mut Led,
+) -> Result<State> {
+    led0.schedule(slow_even()?);
+    led1.schedule(slow_odd()?);
     match button.wait_for_press().await {
-        PressDuration::Short => State::AlwaysOn,
-        PressDuration::Long => State::First,
+        PressDuration::Short => Ok(State::AlwaysOn),
+        PressDuration::Long => Ok(State::Sos),
     }
 }
 
-async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.schedule(on());
-    led1.schedule(on());
+async fn sos_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> Result<State> {
+    led0.schedule(sos_even()?);
+    led1.schedule(sos_odd()?);
     match button.wait_for_press().await {
-        PressDuration::Short => State::AlwaysOff,
-        PressDuration::Long => State::First,
+        PressDuration::Short => Ok(State::First),
+        PressDuration::Long => Ok(State::Sos),
     }
 }
 
-async fn always_off_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.schedule(off());
-    led1.schedule(off());
+async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> Result<State> {
+    led0.schedule(on()?);
+    led1.schedule(on()?);
     match button.wait_for_press().await {
-        PressDuration::Short => State::FastAlternating,
-        PressDuration::Long => State::First,
+        PressDuration::Short => Ok(State::AlwaysOff),
+        PressDuration::Long => Ok(State::Sos),
     }
 }
 
-fn fast_even() -> Vec {
-    Vec::from_slice(&[
+async fn always_off_state(
+    button: &mut Button<'_>,
+    led0: &mut Led,
+    led1: &mut Led,
+) -> Result<State> {
+    led0.schedule(off()?);
+    led1.schedule(off()?);
+    match button.wait_for_press().await {
+        PressDuration::Short => Ok(State::Last),
+        PressDuration::Long => Ok(State::Sos),
+    }
+}
+
+// TODO: We could instead create these once statically.
+fn fast_even() -> Result<Schedule> {
+    Ok(Schedule::from_slice(&[200, 200, 200].map(Duration::from_millis))?)
+}
+
+fn fast_odd() -> Result<Schedule> {
+    Ok(Schedule::from_slice(&[
+        Duration::MIN,
         Duration::from_millis(200),
         Duration::from_millis(200),
-        Duration::from_millis(200),
-    ])
-    .expect("Vec::from_slice failed")
+    ])?)
 }
 
-fn fast_odd() -> Vec {
-    Vec::from_slice(&[Duration::MIN, Duration::from_millis(200), Duration::from_millis(200)])
-        .expect("Vec::from_slice failed")
+fn slow_even() -> Result<Schedule> {
+    Ok(Schedule::from_slice(&[500, 500, 500].map(Duration::from_millis))?)
 }
 
-fn slow_even() -> Vec {
-    Vec::from_slice(&[
+fn slow_odd() -> Result<Schedule> {
+    Ok(Schedule::from_slice(&[
+        Duration::MIN,
         Duration::from_millis(500),
         Duration::from_millis(500),
-        Duration::from_millis(500),
-    ])
-    .expect("Vec::from_slice failed")
+    ])?)
 }
 
-fn slow_odd() -> Vec {
-    Vec::from_slice(&[Duration::MIN, Duration::from_millis(500), Duration::from_millis(500)])
-        .expect("Vec::from_slice failed")
+const fn off() -> Result<Schedule> {
+    Ok(Schedule::new())
 }
 
-const fn off() -> Vec {
-    Vec::new()
+fn on() -> Result<Schedule> {
+    Ok(Schedule::from_slice(&[Duration::MIN, Duration::from_secs(60 * 60 * 24)])?)
 }
 
-fn on() -> Vec {
-    Vec::from_slice(&[Duration::MIN, Duration::from_secs(60 * 60 * 24)])
-        .expect("Vec::from_slice failed")
+#[expect(clippy::arithmetic_side_effects, reason = "multiplication is in bounds")]
+fn sos_even() -> Result<Schedule> {
+    Ok(Schedule::from_slice(
+        &[1, 1, 1, 1, 1, 1, 1, 3, 2, 3, 2, 3, 2, 1, 1, 1, 1, 1, 50]
+            .map(|x| Duration::from_millis(x * 120)),
+    )?)
+}
+
+#[expect(clippy::arithmetic_side_effects, reason = "multiplication is in bounds")]
+fn sos_odd() -> Result<Schedule> {
+    Ok(Schedule::from_slice(
+        &[50, 1, 1, 1, 1, 1, 1, 3, 2, 3, 2, 3, 2, 1, 1, 1, 1, 1, 10]
+            .map(|x| Duration::from_millis(x * 60)),
+    )?)
 }

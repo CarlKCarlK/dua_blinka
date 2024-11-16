@@ -1,5 +1,13 @@
 # blinky
 
+* link to brad's
+* Two virtual (and real) LEDs, working in parallel
+* If you hold (and let go), it sends SOS.
+* We send each one a schedule of on/off times
+* The schedule is a heapless Vec of Duration
+* Fast response to button press????
+
+cmk
 This repo is the code used for the Embedded Rust Hardware Debug Probe workshop taught at the
 Seattle Rust User Group in November 2024.
 
@@ -48,10 +56,20 @@ Seattle Rust User Group in November 2024.
    Pressing the button will change the LED flashing mode in the following sequence:
    LED flashing modes:
 
-   ```mermaid
-   flowchart LR
-   FastFlash --> SlowFlash --> On --> Off --> FastFlash
-   ```
+```mermaid
+stateDiagram-v2
+    FastAlternating --> FastTogether : Tap
+    FastAlternating --> SOS : Hold
+    FastTogether --> Slow : Tap
+    FastTogether --> SOS : Hold
+    Slow --> AlwaysOn : Tap
+    Slow --> SOS : Hold
+    AlwaysOn --> AlwaysOff : Tap
+    AlwaysOn --> SOS : Hold
+    AlwaysOff --> FastAlternating : Tap
+    AlwaysOff --> SOS : Hold
+    SOS --> FastAlternating : Tap
+```
 
    Long-pressing the button always resets to the first (FastFlash) LED state.
 
