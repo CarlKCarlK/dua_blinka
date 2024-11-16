@@ -8,7 +8,6 @@ use embassy_time::Timer;
 
 /// Type representing the physical LED and its "display" mode.
 pub struct Led {
-    schedule: Schedule,
     sender: &'static Signal<CriticalSectionRawMutex, Schedule>,
 }
 
@@ -26,19 +25,14 @@ impl Led {
         signal: &'static Signal<CriticalSectionRawMutex, Schedule>,
         schedule: Schedule,
     ) -> Result<Self, SpawnError> {
-        let led = Self {
-            schedule,
-            sender: signal,
-        };
-        spawner.spawn(led_driver(pin, signal, led.schedule.clone()))?;
+        let led = Self { sender: signal };
+        spawner.spawn(led_driver(pin, signal, schedule))?;
         Ok(led)
     }
 
-    /// Force the LED into the provided `LedMode`, returning the state `Led` was in prior to the
-    /// `set_mode()` call.
+    /// Send a new schedule to the `led_driver` task.
     pub fn schedule(&mut self, schedule: Schedule) {
-        self.schedule = schedule;
-        self.sender.signal(self.schedule.clone()); // cmk why set schedule and send signal?
+        self.sender.signal(schedule);
     }
 }
 
