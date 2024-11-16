@@ -33,7 +33,7 @@ stateDiagram-v2
 
 ## Video
 
-[![Watch the video](https://img.youtube.com/vi/_iQKyh3FGX4/0.jpg)]
+[![Watch the video](https://img.youtube.com/vi/_iQKyh3FGX4/0.jpg)](https://youtu.be/_iQKyh3FGX4)
 
 ## License
 
