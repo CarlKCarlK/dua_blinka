@@ -1,20 +1,13 @@
-mod mode;
-
 use embassy_executor::{SpawnError, Spawner};
 use embassy_futures::select::{select, Either};
 use embassy_rp::gpio::{AnyPin, Level, Output};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
-use embassy_time::Timer;
-use enum_iterator::{cardinality, Sequence};
-
-pub use mode::LedMode;
-
-use crate::shared_const::{FAST_FLASH_DELAY, SLOW_FLASH_DELAY};
+use embassy_time::{Duration, Timer};
 
 /// Type representing the physical LED and its "display" mode.
 pub struct Led {
-    mode: LedMode,
-    sender: &'static Signal<CriticalSectionRawMutex, LedMode>,
+    times: (Duration, Duration, Duration),
+    sender: &'static Signal<CriticalSectionRawMutex, (Duration, Duration, Duration)>,
 }
 
 impl Led {
@@ -28,42 +21,30 @@ impl Led {
     pub fn new(
         pin: AnyPin,
         spawner: Spawner,
-        signal: &'static Signal<CriticalSectionRawMutex, LedMode>,
+        signal: &'static Signal<CriticalSectionRawMutex, (Duration, Duration, Duration)>,
+        times: (Duration, Duration, Duration),
     ) -> Result<Self, SpawnError> {
         let led = Self {
-            mode: LedMode::default(),
+            times,
             sender: signal,
         };
-        spawner.spawn(led_driver(pin, signal, led.mode))?;
+        spawner.spawn(led_driver(pin, signal, led.times))?;
         Ok(led)
-    }
-
-    /// Advances `state` from `Off` -> `FastFlash` -> `SlowFlash` -> `On` -> `Off` -> ..., returning
-    /// the state `Led` was in prior to advancement.
-    pub fn advance_mode(&mut self) -> LedMode {
-        // cmk not async
-        // Invariant: `LedState` `enum` must have at least 1 variant
-        debug_assert!(cardinality::<LedMode>() > 0);
-
-        let old_mode = self.mode;
-        self.mode =
-            old_mode.next().into_iter().chain(LedMode::first()).next().unwrap_or_else(|| {
-                unreachable!("Internal error: Non-empty iterator failed to provide an element (!)")
-            });
-        self.sender.signal(self.mode);
-        old_mode
     }
 
     /// Force the LED into the provided `LedMode`, returning the state `Led` was in prior to the
     /// `set_mode()` call.
-    pub fn set_mode(&mut self, mode: LedMode) -> LedMode {
+    pub fn set_mode(
+        &mut self,
+        times: (Duration, Duration, Duration),
+    ) -> (Duration, Duration, Duration) {
         // cmk not async
-        let old_mode = self.mode;
+        let old_times = self.times;
 
-        self.mode = mode;
-        self.sender.signal(self.mode);
+        self.times = times;
+        self.sender.signal(self.times);
 
-        old_mode
+        old_times
     }
 }
 
@@ -79,44 +60,38 @@ impl Led {
 #[embassy_executor::task(pool_size = 4)]
 async fn led_driver(
     pin: AnyPin,
-    receiver: &'static Signal<CriticalSectionRawMutex, LedMode>,
-    initial_mode: LedMode,
+    // cmk instead of this could pass a vector (up to some fixed length) of times
+    receiver: &'static Signal<CriticalSectionRawMutex, (Duration, Duration, Duration)>,
+    initial_mode: (Duration, Duration, Duration),
 ) -> ! {
     // Define `led_pin` as an `Output` pin (meaning the microcontroller will supply 3.3V when its
     // value is set to `Level::High`.
     let mut led_pin = Output::new(pin, Level::Low);
     let mut led_mode = initial_mode;
     // Drive the LED's behavior forever.
-    loop {
-        // Check the `Signal` (like a `Channel` or "hotline"; a `Signal`'s messages do not
-        // accumulate in a queue or block the sender; instead, the `Signal` will provide only the
-        // latest "message" sent to the receiver (if any).  New messages overwrite previously sent
-        // unread messages.
-        use LedMode as Lm;
-        let res = match led_mode {
-            // Flash the LED quickly and wait for the next message.
-            Lm::FastFlash => {
-                led_pin.toggle();
-                select(Timer::after(FAST_FLASH_DELAY), receiver.wait()).await
-            },
-            // Flash the LED slowly and wait for the next message.
-            Lm::SlowFlash => {
-                led_pin.toggle();
-                select(Timer::after(SLOW_FLASH_DELAY), receiver.wait()).await
-            },
-            // Leave the LED on continuously and wait for the next message.
-            Lm::On => {
-                led_pin.set_high();
-                Either::Second(receiver.wait().await)
-            },
-            // Turn the LED off and wait for the next message.
-            Lm::Off => {
-                led_pin.set_low();
-                Either::Second(receiver.wait().await)
-            },
-        };
+    'outer: loop {
+        // delay before starting the blinking
+        led_pin.set_low(); // off
+        let res = select(Timer::after(led_mode.0), receiver.wait()).await;
         if let Either::Second(new_mode) = res {
-            led_mode = new_mode
+            led_mode = new_mode;
+            continue 'outer;
+        }
+
+        loop {
+            led_pin.set_high(); // on
+            let res = select(Timer::after(led_mode.1), receiver.wait()).await;
+            if let Either::Second(new_mode) = res {
+                led_mode = new_mode;
+                continue 'outer;
+            }
+
+            led_pin.set_low(); // off
+            let res = select(Timer::after(led_mode.2), receiver.wait()).await;
+            if let Either::Second(new_mode) = res {
+                led_mode = new_mode;
+                continue 'outer;
+            }
         }
     }
 }

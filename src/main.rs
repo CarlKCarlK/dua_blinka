@@ -10,7 +10,8 @@ mod signal;
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
-use lib::{Button, Led, LedMode, Never, PressDuration};
+use embassy_time::Duration;
+use lib::{Button, Led, Never, PressDuration};
 use panic_probe as _;
 
 use lib::error::Result;
@@ -48,8 +49,18 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // how to create new tasks on the `embassy_executor` async runtime (analogous to spawning a new
     // thread in an OS).  Lastly, `SIGNAL` is a "hotline" allowing `Led` to communicate with other
     // contexts (in our scenario, `task`s).
-    let mut led0 = Led::new(led_pin0, spawner, &SIGNAL0)?;
-    let mut led1 = Led::new(led_pin1, spawner, &SIGNAL1)?;
+    let mut led0 = Led::new(
+        led_pin0,
+        spawner,
+        &SIGNAL0,
+        (Duration::from_millis(0), Duration::from_millis(200), Duration::from_millis(200)),
+    )?;
+    let mut led1 = Led::new(
+        led_pin1,
+        spawner,
+        &SIGNAL1,
+        (Duration::from_millis(100), Duration::from_millis(200), Duration::from_millis(200)),
+    )?;
     // cmk understand how we can give away spawner under the ownership rules. Also, what more can we do with spawner?
     // cmk understand SIGNAL
 
@@ -84,8 +95,12 @@ enum State {
     Last,
 }
 async fn fast_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode(LedMode::default());
-    led1.set_mode(LedMode::On);
+    led0.set_mode((
+        Duration::from_millis(200),
+        Duration::from_millis(200),
+        Duration::from_millis(200),
+    ));
+    led1.set_mode((Duration::MIN, Duration::from_millis(200), Duration::from_millis(200)));
     match button.wait_for_press().await {
         PressDuration::Short => State::Slow,
         PressDuration::Long => State::First,
@@ -93,8 +108,12 @@ async fn fast_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> 
 }
 
 async fn slow_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode(LedMode::SlowFlash);
-    led1.set_mode(LedMode::On);
+    led0.set_mode((
+        Duration::from_millis(500),
+        Duration::from_millis(500),
+        Duration::from_millis(500),
+    ));
+    led1.set_mode((Duration::MIN, Duration::from_millis(500), Duration::from_millis(500)));
     match button.wait_for_press().await {
         PressDuration::Short => State::AlwaysOn,
         PressDuration::Long => State::First,
@@ -102,8 +121,8 @@ async fn slow_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> 
 }
 
 async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode(LedMode::On);
-    led1.set_mode(LedMode::Off);
+    led0.set_mode((Duration::MIN, Duration::from_secs(60 * 60 * 24), Duration::MIN));
+    led1.set_mode((Duration::MIN, Duration::MIN, Duration::from_secs(60 * 60 * 24)));
     match button.wait_for_press().await {
         PressDuration::Short => State::AlwaysOff,
         PressDuration::Long => State::First,
@@ -111,8 +130,8 @@ async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led
 }
 
 async fn always_off_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode(LedMode::Off);
-    led1.set_mode(LedMode::Off);
+    led0.set_mode((Duration::MIN, Duration::MIN, Duration::from_secs(60 * 60 * 24)));
+    led1.set_mode((Duration::MIN, Duration::from_secs(60 * 60 * 24), Duration::MIN));
     match button.wait_for_press().await {
         PressDuration::Short => State::Fast,
         PressDuration::Long => State::First,

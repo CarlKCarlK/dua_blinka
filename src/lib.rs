@@ -2,7 +2,6 @@
 #![no_std]
 #![no_main]
 
-
 mod button;
 pub mod error;
 mod led;
@@ -10,5 +9,5 @@ mod never;
 pub mod shared_const;
 
 pub use button::{Button, PressDuration};
-pub use led::{Led, LedMode};
+pub use led::Led;
 pub use never::Never;
