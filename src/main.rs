@@ -11,6 +11,7 @@ use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
 use embassy_time::Duration;
+use lib::shared_const::Vec;
 use lib::{Button, Led, Never, PressDuration};
 use panic_probe as _;
 
@@ -49,18 +50,8 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // how to create new tasks on the `embassy_executor` async runtime (analogous to spawning a new
     // thread in an OS).  Lastly, `SIGNAL` is a "hotline" allowing `Led` to communicate with other
     // contexts (in our scenario, `task`s).
-    let mut led0 = Led::new(
-        led_pin0,
-        spawner,
-        &SIGNAL0,
-        (Duration::from_millis(0), Duration::from_millis(200), Duration::from_millis(200)),
-    )?;
-    let mut led1 = Led::new(
-        led_pin1,
-        spawner,
-        &SIGNAL1,
-        (Duration::from_millis(100), Duration::from_millis(200), Duration::from_millis(200)),
-    )?;
+    let mut led0 = Led::new(led_pin0, spawner, &SIGNAL0, slow_even())?;
+    let mut led1 = Led::new(led_pin1, spawner, &SIGNAL1, slow_odd())?;
     // cmk understand how we can give away spawner under the ownership rules. Also, what more can we do with spawner?
     // cmk understand SIGNAL
 
@@ -75,9 +66,14 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     loop {
         defmt::info!("State: {:?}", state);
         state = match state {
-            State::First => State::Fast,
-            State::Fast => fast_state(&mut button, &mut led0, &mut led1).await,
-            State::Slow => slow_state(&mut button, &mut led0, &mut led1).await,
+            State::First => State::FastAlternating,
+            State::FastAlternating => {
+                fast_alternating_state(&mut button, &mut led0, &mut led1).await
+            },
+            State::FastTogether => fast_together_state(&mut button, &mut led0, &mut led1).await,
+            State::SlowAlternating => {
+                slow_alternating_state(&mut button, &mut led0, &mut led1).await
+            },
             State::AlwaysOn => always_on_state(&mut button, &mut led0, &mut led1).await,
             State::AlwaysOff => always_off_state(&mut button, &mut led0, &mut led1).await,
             State::Last => State::First,
@@ -88,32 +84,35 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
 #[derive(Debug, defmt::Format)]
 enum State {
     First,
-    Fast,
-    Slow,
+    FastAlternating,
+    FastTogether,
+    SlowAlternating,
     AlwaysOn,
     AlwaysOff,
     Last,
 }
-async fn fast_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode((
-        Duration::from_millis(200),
-        Duration::from_millis(200),
-        Duration::from_millis(200),
-    ));
-    led1.set_mode((Duration::MIN, Duration::from_millis(200), Duration::from_millis(200)));
+
+async fn fast_alternating_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.schedule(fast_even());
+    led1.schedule(fast_odd());
     match button.wait_for_press().await {
-        PressDuration::Short => State::Slow,
+        PressDuration::Short => State::FastTogether,
         PressDuration::Long => State::First,
     }
 }
 
-async fn slow_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode((
-        Duration::from_millis(500),
-        Duration::from_millis(500),
-        Duration::from_millis(500),
-    ));
-    led1.set_mode((Duration::MIN, Duration::from_millis(500), Duration::from_millis(500)));
+async fn fast_together_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.schedule(fast_even());
+    led1.schedule(fast_even());
+    match button.wait_for_press().await {
+        PressDuration::Short => State::SlowAlternating,
+        PressDuration::Long => State::First,
+    }
+}
+
+async fn slow_alternating_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
+    led0.schedule(slow_even());
+    led1.schedule(slow_odd());
     match button.wait_for_press().await {
         PressDuration::Short => State::AlwaysOn,
         PressDuration::Long => State::First,
@@ -121,8 +120,8 @@ async fn slow_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> 
 }
 
 async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode((Duration::MIN, Duration::from_secs(60 * 60 * 24), Duration::MIN));
-    led1.set_mode((Duration::MIN, Duration::MIN, Duration::from_secs(60 * 60 * 24)));
+    led0.schedule(on());
+    led1.schedule(on());
     match button.wait_for_press().await {
         PressDuration::Short => State::AlwaysOff,
         PressDuration::Long => State::First,
@@ -130,10 +129,47 @@ async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led
 }
 
 async fn always_off_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> State {
-    led0.set_mode((Duration::MIN, Duration::MIN, Duration::from_secs(60 * 60 * 24)));
-    led1.set_mode((Duration::MIN, Duration::from_secs(60 * 60 * 24), Duration::MIN));
+    led0.schedule(off());
+    led1.schedule(off());
     match button.wait_for_press().await {
-        PressDuration::Short => State::Fast,
+        PressDuration::Short => State::FastAlternating,
         PressDuration::Long => State::First,
     }
+}
+
+fn fast_even() -> Vec {
+    Vec::from_slice(&[
+        Duration::from_millis(200),
+        Duration::from_millis(200),
+        Duration::from_millis(200),
+    ])
+    .expect("Vec::from_slice failed")
+}
+
+fn fast_odd() -> Vec {
+    Vec::from_slice(&[Duration::MIN, Duration::from_millis(200), Duration::from_millis(200)])
+        .expect("Vec::from_slice failed")
+}
+
+fn slow_even() -> Vec {
+    Vec::from_slice(&[
+        Duration::from_millis(500),
+        Duration::from_millis(500),
+        Duration::from_millis(500),
+    ])
+    .expect("Vec::from_slice failed")
+}
+
+fn slow_odd() -> Vec {
+    Vec::from_slice(&[Duration::MIN, Duration::from_millis(500), Duration::from_millis(500)])
+        .expect("Vec::from_slice failed")
+}
+
+const fn off() -> Vec {
+    Vec::new()
+}
+
+fn on() -> Vec {
+    Vec::from_slice(&[Duration::MIN, Duration::from_secs(60 * 60 * 24)])
+        .expect("Vec::from_slice failed")
 }

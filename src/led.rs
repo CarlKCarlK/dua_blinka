@@ -1,13 +1,15 @@
+use crate::shared_const::Vec;
+use defmt::info;
 use embassy_executor::{SpawnError, Spawner};
 use embassy_futures::select::{select, Either};
 use embassy_rp::gpio::{AnyPin, Level, Output};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
-use embassy_time::{Duration, Timer};
+use embassy_time::Timer;
 
 /// Type representing the physical LED and its "display" mode.
 pub struct Led {
-    times: (Duration, Duration, Duration),
-    sender: &'static Signal<CriticalSectionRawMutex, (Duration, Duration, Duration)>,
+    schedule: Vec,
+    sender: &'static Signal<CriticalSectionRawMutex, Vec>,
 }
 
 impl Led {
@@ -21,30 +23,22 @@ impl Led {
     pub fn new(
         pin: AnyPin,
         spawner: Spawner,
-        signal: &'static Signal<CriticalSectionRawMutex, (Duration, Duration, Duration)>,
-        times: (Duration, Duration, Duration),
+        signal: &'static Signal<CriticalSectionRawMutex, Vec>,
+        schedule: Vec,
     ) -> Result<Self, SpawnError> {
         let led = Self {
-            times,
+            schedule,
             sender: signal,
         };
-        spawner.spawn(led_driver(pin, signal, led.times))?;
+        spawner.spawn(led_driver(pin, signal, led.schedule.clone()))?;
         Ok(led)
     }
 
     /// Force the LED into the provided `LedMode`, returning the state `Led` was in prior to the
     /// `set_mode()` call.
-    pub fn set_mode(
-        &mut self,
-        times: (Duration, Duration, Duration),
-    ) -> (Duration, Duration, Duration) {
-        // cmk not async
-        let old_times = self.times;
-
-        self.times = times;
-        self.sender.signal(self.times);
-
-        old_times
+    pub fn schedule(&mut self, schedule: Vec) {
+        self.schedule = schedule;
+        self.sender.signal(self.schedule.clone()); // cmk why set schedule and send signal?
     }
 }
 
@@ -58,40 +52,44 @@ impl Led {
 /// iv) does not consume any computing cycles when "yield"ing.  Important for battery-powered and
 ///     limited-compute-capability devices.
 #[embassy_executor::task(pool_size = 4)]
+#[expect(
+    clippy::indexing_slicing,
+    reason = "Safe because `index` is always less than `schedule.len()"
+)]
+#[expect(clippy::len_zero, reason = "This is always safe.")]
+#[expect(clippy::arithmetic_side_effects, reason = "schedule.len() is not zero.")]
 async fn led_driver(
     pin: AnyPin,
-    // cmk instead of this could pass a vector (up to some fixed length) of times
-    receiver: &'static Signal<CriticalSectionRawMutex, (Duration, Duration, Duration)>,
-    initial_mode: (Duration, Duration, Duration),
+    // cmk instead of this could pass a vector (up to some fixed length) of schedule
+    receiver: &'static Signal<CriticalSectionRawMutex, Vec>,
+    mut schedule: Vec,
 ) -> ! {
     // Define `led_pin` as an `Output` pin (meaning the microcontroller will supply 3.3V when its
     // value is set to `Level::High`.
     let mut led_pin = Output::new(pin, Level::Low);
-    let mut led_mode = initial_mode;
     // Drive the LED's behavior forever.
-    'outer: loop {
-        // delay before starting the blinking
-        led_pin.set_low(); // off
-        let res = select(Timer::after(led_mode.0), receiver.wait()).await;
-        if let Either::Second(new_mode) = res {
-            led_mode = new_mode;
-            continue 'outer;
+    let mut index = 0;
+    loop {
+        info!("led_driver: index: {}", index);
+        // if schedule is empty or 1 item, turn off the LED and wait for a new schedule
+        if schedule.len() <= 1 {
+            led_pin.set_low();
+            schedule = receiver.wait().await;
+            continue;
+        }
+        debug_assert!(index < schedule.len() && 0 < schedule.len(), "real assert");
+        led_pin.set_level((index % 2 == 1).into());
+        if let Either::Second(new_schedule) =
+            select(Timer::after(schedule[index]), receiver.wait()).await
+        {
+            info!("new schedule");
+            schedule = new_schedule;
+            index = 0;
+            continue;
         }
 
-        loop {
-            led_pin.set_high(); // on
-            let res = select(Timer::after(led_mode.1), receiver.wait()).await;
-            if let Either::Second(new_mode) = res {
-                led_mode = new_mode;
-                continue 'outer;
-            }
-
-            led_pin.set_low(); // off
-            let res = select(Timer::after(led_mode.2), receiver.wait()).await;
-            if let Either::Second(new_mode) = res {
-                led_mode = new_mode;
-                continue 'outer;
-            }
-        }
+        // increment index, wrapping around to 1 if we reach the end of the schedule
+        index = (index % (schedule.len() - 1)) + 1;
+        debug_assert!(0 < index && index < schedule.len(), "real assert");
     }
 }

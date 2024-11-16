@@ -36,6 +36,7 @@ embassy-futures = { version = "0.1.1" }
 embassy-time = { version = "0.3.2", features = ["defmt", "defmt-timestamp-uptime", ]}
 enum-iterator = "2.1.0"
 derive_more = { version = "1.0.0", default-features = false, features = ["debug", "display", "error", "from"] }
+heapless = "0.8.0"
 
 [dev-dependencies]
 
