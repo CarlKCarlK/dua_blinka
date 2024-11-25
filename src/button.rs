@@ -22,7 +22,7 @@ impl Button<'_> {
         }
     }
 
-    pub async fn wait_for_press(&mut self) -> PressDuration {
+    pub async fn press_duration(&mut self) -> PressDuration {
         // wait for the button to be released
         self.wait_for_button_up().await;
         self.debounce_delay().await;
@@ -32,7 +32,7 @@ impl Button<'_> {
 
         // Sometimes the start (and end) of a press can be "noisy" (fluctuations between
         // "pressed" and "unpressed" states on the microsecond time scale as the physical
-        // contactors changing from "not touching" through "almost touching" to "touching" (or
+        // contacts changing from "not touching" through "almost touching" to "touching" (or
         // vice-versa)).  We're going to ignore the button's state during the noisy, fluctuating
         // "almost touching" state.  This is called "debouncing".
         self.debounce_delay().await;

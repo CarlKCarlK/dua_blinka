@@ -9,5 +9,5 @@ mod never;
 pub mod shared_const;
 
 pub use button::{Button, PressDuration};
-pub use led::Led;
+pub use led::{Led, LedNotifier};
 pub use never::Never;

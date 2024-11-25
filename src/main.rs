@@ -2,19 +2,15 @@
 #![no_main]
 #![allow(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
 
-mod signal;
-
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
 use embassy_time::Duration;
 use lib::shared_const::Schedule;
-use lib::{Button, Led, Never, PressDuration};
+use lib::{Button, Led, LedNotifier, Never, PressDuration};
 use panic_probe as _;
 
 use lib::error::Result;
-use signal::SIGNAL0;
-use signal::SIGNAL1;
 
 // In bare-metal development, your application is launched by the processor's boot loader (from ROM).
 // The boot loader typically jumps (doesn't make a function call) to your application's entry point.
@@ -47,8 +43,10 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // how to create new tasks on the `embassy_executor` async runtime (analogous to spawning a new
     // thread in an OS).  Lastly, `SIGNAL` is a "hotline" allowing `Led` to communicate with other
     // contexts (in our scenario, `task`s).
-    let mut led0 = Led::new(led_pin0, spawner, &SIGNAL0, slow_even()?)?;
-    let mut led1 = Led::new(led_pin1, spawner, &SIGNAL1, slow_odd()?)?;
+    static LED_NOTIFIER0: LedNotifier = Led::notifier();
+    let mut led0 = Led::new(led_pin0, spawner, &LED_NOTIFIER0, slow_even()?)?;
+    static LED_NOTIFIER1: LedNotifier = Led::notifier();
+    let mut led1 = Led::new(led_pin1, spawner, &LED_NOTIFIER1, slow_odd()?)?;
 
     let button_pin = peripherals.PIN_13.degrade();
 
@@ -85,12 +83,12 @@ enum State {
 
 async fn fast_alternate_state(
     button: &mut Button<'_>,
-    led0: &mut Led,
-    led1: &mut Led,
+    led0: &mut Led<'_>,
+    led1: &mut Led<'_>,
 ) -> Result<State> {
     led0.schedule(fast_even()?);
     led1.schedule(fast_odd()?);
-    match button.wait_for_press().await {
+    match button.press_duration().await {
         PressDuration::Short => Ok(State::FastTogether),
         PressDuration::Long => Ok(State::Sos),
     }
@@ -98,12 +96,12 @@ async fn fast_alternate_state(
 
 async fn fast_together_state(
     button: &mut Button<'_>,
-    led0: &mut Led,
-    led1: &mut Led,
+    led0: &mut Led<'_>,
+    led1: &mut Led<'_>,
 ) -> Result<State> {
     led0.schedule(fast_even()?);
     led1.schedule(fast_even()?);
-    match button.wait_for_press().await {
+    match button.press_duration().await {
         PressDuration::Short => Ok(State::SlowAlternate),
         PressDuration::Long => Ok(State::Sos),
     }
@@ -111,30 +109,38 @@ async fn fast_together_state(
 
 async fn slow_alternate_state(
     button: &mut Button<'_>,
-    led0: &mut Led,
-    led1: &mut Led,
+    led0: &mut Led<'_>,
+    led1: &mut Led<'_>,
 ) -> Result<State> {
     led0.schedule(slow_even()?);
     led1.schedule(slow_odd()?);
-    match button.wait_for_press().await {
+    match button.press_duration().await {
         PressDuration::Short => Ok(State::AlwaysOn),
         PressDuration::Long => Ok(State::Sos),
     }
 }
 
-async fn sos_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> Result<State> {
+async fn sos_state(
+    button: &mut Button<'_>,
+    led0: &mut Led<'_>,
+    led1: &mut Led<'_>,
+) -> Result<State> {
     led0.schedule(sos_even()?);
     led1.schedule(sos_odd()?);
-    match button.wait_for_press().await {
+    match button.press_duration().await {
         PressDuration::Short => Ok(State::First),
         PressDuration::Long => Ok(State::Sos),
     }
 }
 
-async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led) -> Result<State> {
+async fn always_on_state(
+    button: &mut Button<'_>,
+    led0: &mut Led<'_>,
+    led1: &mut Led<'_>,
+) -> Result<State> {
     led0.schedule(on()?);
     led1.schedule(on()?);
-    match button.wait_for_press().await {
+    match button.press_duration().await {
         PressDuration::Short => Ok(State::AlwaysOff),
         PressDuration::Long => Ok(State::Sos),
     }
@@ -142,12 +148,12 @@ async fn always_on_state(button: &mut Button<'_>, led0: &mut Led, led1: &mut Led
 
 async fn always_off_state(
     button: &mut Button<'_>,
-    led0: &mut Led,
-    led1: &mut Led,
+    led0: &mut Led<'_>,
+    led1: &mut Led<'_>,
 ) -> Result<State> {
     led0.schedule(off()?);
     led1.schedule(off()?);
-    match button.wait_for_press().await {
+    match button.press_duration().await {
         PressDuration::Short => Ok(State::Last),
         PressDuration::Long => Ok(State::Sos),
     }

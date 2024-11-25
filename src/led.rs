@@ -7,11 +7,12 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal}
 use embassy_time::Timer;
 
 /// Type representing the physical LED and its "display" mode.
-pub struct Led {
-    sender: &'static Signal<CriticalSectionRawMutex, Schedule>,
+pub struct Led<'a> {
+    notifier: &'a LedNotifier,
 }
+pub type LedNotifier = Signal<CriticalSectionRawMutex, Schedule>;
 
-impl Led {
+impl Led<'_> {
     /// Constructor.  Inject:
     ///     * the GPIO pin where the LED is connected.
     ///     * `embassy_executor`'s task spawner, which enables creating new cooperative tasks,
@@ -22,17 +23,22 @@ impl Led {
     pub fn new(
         pin: AnyPin,
         spawner: Spawner,
-        signal: &'static Signal<CriticalSectionRawMutex, Schedule>,
+        notifier: &'static LedNotifier,
         schedule: Schedule,
     ) -> Result<Self, SpawnError> {
-        let led = Self { sender: signal };
-        spawner.spawn(led_driver(pin, signal, schedule))?;
+        let led = Self { notifier };
+        spawner.spawn(led_driver(pin, notifier, schedule))?;
         Ok(led)
+    }
+
+    #[must_use]
+    pub const fn notifier() -> LedNotifier {
+        Signal::new()
     }
 
     /// Send a new schedule to the `led_driver` task.
     pub fn schedule(&mut self, schedule: Schedule) {
-        self.sender.signal(schedule);
+        self.notifier.signal(schedule);
     }
 }
 
