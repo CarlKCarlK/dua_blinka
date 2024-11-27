@@ -6,11 +6,10 @@ use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
 use embassy_time::Duration;
+use lib::error::Result;
 use lib::shared_const::Schedule;
 use lib::{Button, Led, LedNotifier, Never, PressDuration};
 use panic_probe as _;
-
-use lib::error::Result;
 
 // In bare-metal development, your application is launched by the processor's boot loader (from ROM).
 // The boot loader typically jumps (doesn't make a function call) to your application's entry point.

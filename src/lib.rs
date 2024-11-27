@@ -6,8 +6,10 @@ mod button;
 pub mod error;
 mod led;
 mod never;
+mod press_duration;
 pub mod shared_const;
 
-pub use button::{Button, PressDuration};
+pub use button::Button;
 pub use led::{Led, LedNotifier};
 pub use never::Never;
+pub use press_duration::PressDuration;

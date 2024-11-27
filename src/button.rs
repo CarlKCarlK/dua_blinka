@@ -1,11 +1,8 @@
-mod press_duration;
-
+use crate::press_duration::PressDuration;
 use crate::shared_const::{BUTTON_DEBOUNCE_DELAY, LONG_PRESS_DURATION};
 use embassy_futures::select::{select, Either};
 use embassy_rp::gpio::{AnyPin, Input, Pull};
 use embassy_time::Timer;
-
-pub use press_duration::PressDuration;
 
 /// Type representing the hardware button and its state.
 pub struct Button<'a> {

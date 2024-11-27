@@ -6,6 +6,8 @@ use embassy_rp::gpio::{AnyPin, Level, Output};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::Timer;
 
+// cmk will need to rename this project from blinky_carlk2
+
 /// Type representing the physical LED and its "display" mode.
 pub struct Led<'a> {
     notifier: &'a LedNotifier,

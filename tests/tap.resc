@@ -1,0 +1,3 @@
+sysbus.gpio.button Press
+sleep 0.05
+sysbus.gpio.button Release
