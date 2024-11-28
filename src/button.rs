@@ -1,22 +1,17 @@
 use crate::press_duration::PressDuration;
 use crate::shared_const::{BUTTON_DEBOUNCE_DELAY, LONG_PRESS_DURATION};
 use embassy_futures::select::{select, Either};
-use embassy_rp::gpio::{AnyPin, Input, Pull};
+use embassy_rp::gpio::Input;
 use embassy_time::Timer;
 
-/// Type representing the hardware button and its state.
-pub struct Button<'a> {
-    pin: Input<'a>,
-}
+/// A struct representing a virtual button input.
+pub struct Button<'a>(Input<'a>);
 
-impl Button<'_> {
-    /// Constructor.  Inject the GPIO pin where the hardware button can be found.
+impl<'a> Button<'a> {
+    /// Creates a new `Button` instance.
     #[must_use]
-    pub fn new(pin: AnyPin) -> Self {
-        Button {
-            // Define the pin as an input with a "default" of `Level::Low`, or no voltage
-            pin: Input::new(pin, Pull::Down),
-        }
+    pub const fn new(button: Input<'a>) -> Self {
+        Self(button)
     }
 
     pub async fn press_duration(&mut self) -> PressDuration {
@@ -51,19 +46,19 @@ impl Button<'_> {
 
     /// Pause until voltage is present on the input pin.
     async fn wait_for_button_down(&mut self) -> &mut Self {
-        self.pin.wait_for_high().await;
+        self.0.wait_for_high().await;
         self
     }
 
     // wait for the button to be released
     async fn wait_for_button_up(&mut self) -> &mut Self {
-        self.pin.wait_for_low().await;
+        self.0.wait_for_low().await;
         self
     }
 
     /// Pause until voltage on the input pin begins to go away.
     async fn wait_for_down_press(&mut self) -> &mut Self {
-        self.pin.wait_for_falling_edge().await;
+        self.0.wait_for_falling_edge().await;
         self
     }
 }

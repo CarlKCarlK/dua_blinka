@@ -13,12 +13,6 @@ pub enum Error {
     #[display("{_0:?}")]
     TaskSpawn(#[error(not(source))] embassy_executor::SpawnError),
 
-    #[display("Failed to create vector from slice: capacity exceeded")]
-    VecCapacityExceeded,
-}
-
-impl From<()> for Error {
-    fn from((): ()) -> Self {
-        Self::VecCapacityExceeded
-    }
+    #[display("Failed to create schedule from slice: capacity exceeded")]
+    ScheduleCapacityExceeded,
 }

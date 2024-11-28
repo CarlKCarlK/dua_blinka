@@ -1,7 +1,4 @@
 use derive_more::Display;
-use embassy_time::Duration;
-
-use crate::shared_const::LONG_PRESS_DURATION;
 
 // Instead of having API describing a short vs a long button-press vaguely using a `bool`, we define
 // an `enum` to clarify what each state represents.  The compiler will compile this down to the
@@ -13,13 +10,14 @@ pub enum PressDuration {
     Long,
 }
 
-// Make `PressDuration` solely responsible for the distinction in `Duration` between a short and long
-// button press.
-impl From<Duration> for PressDuration {
-    fn from(duration: Duration) -> Self {
-        match duration >= LONG_PRESS_DURATION {
-            true => Self::Long,
-            false => Self::Short,
-        }
-    }
-}
+// cmk remove
+// // Make `PressDuration` solely responsible for the distinction in `Duration` between a short and long
+// // button press.
+// impl From<Duration> for PressDuration {
+//     fn from(duration: Duration) -> Self {
+//         match duration >= LONG_PRESS_DURATION {
+//             true => Self::Long,
+//             false => Self::Short,
+//         }
+//     }
+// }

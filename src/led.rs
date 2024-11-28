@@ -1,10 +1,11 @@
-use crate::shared_const::Schedule;
 use defmt::info;
 use embassy_executor::{SpawnError, Spawner};
 use embassy_futures::select::{select, Either};
-use embassy_rp::gpio::{AnyPin, Level, Output};
+use embassy_rp::gpio::Output;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::Timer;
+
+use crate::Schedule;
 
 // cmk will need to rename this project from blinky_carlk2
 
@@ -12,24 +13,32 @@ use embassy_time::Timer;
 pub struct Led<'a> {
     notifier: &'a LedNotifier,
 }
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "We use the prefix because other structs may need their own notifier type."
+)]
 pub type LedNotifier = Signal<CriticalSectionRawMutex, Schedule>;
 
 impl Led<'_> {
-    /// Constructor.  Inject:
-    ///     * the GPIO pin where the LED is connected.
-    ///     * `embassy_executor`'s task spawner, which enables creating new cooperative tasks,
-    ///       running them on the async `Executor`.
-    ///     * `Signal`, which is like a `Channel` or a "hotline" to communicate from one task to
-    ///       another.  In this case, `Led` will use the `Signal` to tell the `led_driver` task
-    ///       when to change operating modes.
+    /// Create a new `Led`, which entails starting an Embassy task.
+    ///
+    /// # Arguments
+    ///
+    /// * `pin` - The pin that controls the `Led`.
+    /// * `notifier` - The static notifier that sends messages to the `Led`.
+    ///          This notifier is created with the `Led::notifier()` method.
+    /// * `spawner` - The spawner that will spawn the task that controls the `Led`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `SpawnError` if the task cannot be spawned.
     pub fn new(
-        pin: AnyPin,
-        spawner: Spawner,
+        pin: Output<'static>,
         notifier: &'static LedNotifier,
-        schedule: Schedule,
+        spawner: Spawner,
     ) -> Result<Self, SpawnError> {
         let led = Self { notifier };
-        spawner.spawn(led_driver(pin, notifier, schedule))?;
+        spawner.spawn(device_loop(pin, notifier))?;
         Ok(led)
     }
 
@@ -54,34 +63,22 @@ impl Led<'_> {
 /// iv) does not consume any computing cycles when "yield"ing.  Important for battery-powered and
 ///     limited-compute-capability devices.
 #[embassy_executor::task(pool_size = 4)]
-#[expect(
-    clippy::indexing_slicing,
-    reason = "Safe because `index` is always less than `schedule.len()"
-)]
-#[expect(clippy::len_zero, reason = "This is always safe.")]
-#[expect(clippy::arithmetic_side_effects, reason = "schedule.len() is not zero.")]
-async fn led_driver(
-    pin: AnyPin,
-    receiver: &'static Signal<CriticalSectionRawMutex, Schedule>,
-    mut schedule: Schedule,
-) -> ! {
-    // Define `led_pin` as an `Output` pin (meaning the microcontroller will supply 3.3V when its
-    // value is set to `Level::High`.
-    let mut led_pin = Output::new(pin, Level::Low);
+async fn device_loop(mut pin: Output<'static>, notifier: &'static LedNotifier) -> ! {
+    let mut schedule = Schedule::default();
     // Drive the LED's behavior forever.
     let mut index = 0;
     loop {
         info!("led_driver: index: {}", index);
-        // if schedule is empty or 1 item, turn off the LED and wait for a new schedule
+        // if the schedule is empty or contains just one duration, turn off the LED and wait for a new schedule.
         if schedule.len() <= 1 {
-            led_pin.set_low();
-            schedule = receiver.wait().await;
+            pin.set_low();
+            schedule = notifier.wait().await;
             continue;
         }
-        debug_assert!(index < schedule.len() && 0 < schedule.len(), "real assert");
-        led_pin.set_level((index % 2 == 1).into());
+        debug_assert!(index < schedule.len(), "real assert");
+        pin.set_level((index % 2 == 1).into());
         if let Either::Second(new_schedule) =
-            select(Timer::after(schedule[index]), receiver.wait()).await
+            select(Timer::after(schedule[index]), notifier.wait()).await
         {
             info!("new schedule");
             schedule = new_schedule;
