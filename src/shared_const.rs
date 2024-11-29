@@ -17,21 +17,25 @@ pub const SLOW_FLASH_DELAY: Duration = Duration::from_millis(750);
 /// Zero duration, representing no delay.
 pub const ZERO_DELAY: Duration = Duration::from_millis(0);
 
+/// Maximum number of elements in a schedule.
+pub const SCHEDULE_CAPACITY: usize = 20;
+
 /// Duration representing one day.
 pub const ONE_DAY: Duration = Duration::from_secs(60 * 60 * 24);
 
 /// Duration of one millisecond.
-pub const ONE_MILLIS: Duration = Duration::from_millis(1);
+pub const MORSE_DOT_MILLIS: Duration = Duration::from_millis(1);
 
 /// Duration of three milliseconds.
-pub const THREE_MILLIS: Duration = Duration::from_millis(3);
+pub const MORSE_DASH_MILLIS: Duration = Duration::from_millis(3);
 
 /// Morse code representation for 'S' with interleaved delays.
-pub const MORSE_S_MILLIS: [Duration; 5] = pad([ONE_MILLIS, ONE_MILLIS, ONE_MILLIS], ONE_MILLIS);
+pub const MORSE_S_MILLIS: [Duration; 5] =
+    pad([MORSE_DOT_MILLIS, MORSE_DOT_MILLIS, MORSE_DOT_MILLIS], MORSE_DOT_MILLIS);
 
 /// Morse code representation for 'O' with interleaved delays.
 pub const MORSE_O_MILLIS: [Duration; 5] =
-    pad([THREE_MILLIS, THREE_MILLIS, THREE_MILLIS], ONE_MILLIS);
+    pad([MORSE_DASH_MILLIS, MORSE_DASH_MILLIS, MORSE_DASH_MILLIS], MORSE_DOT_MILLIS);
 
 /// Pads an array of durations with a specified padding duration.
 ///

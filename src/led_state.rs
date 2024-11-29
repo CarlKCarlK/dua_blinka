@@ -42,8 +42,8 @@ impl LedState {
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
-        led0.schedule(Schedule::fast_even()?);
-        led1.schedule(Schedule::fast_odd()?);
+        led0.schedule(Schedule::fast_with_delay()?);
+        led1.schedule(Schedule::fast_no_delay()?);
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::FastTogether),
             PressDuration::Long => Ok(Self::Sos),
@@ -55,8 +55,8 @@ impl LedState {
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
-        led0.schedule(Schedule::fast_even()?);
-        led1.schedule(Schedule::fast_even()?);
+        led0.schedule(Schedule::fast_with_delay()?);
+        led1.schedule(Schedule::fast_with_delay()?);
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::SlowAlternate),
             PressDuration::Long => Ok(Self::Sos),
@@ -69,7 +69,7 @@ impl LedState {
         button: &mut Button<'_>,
     ) -> Result<Self> {
         led0.schedule(Schedule::slow_even()?);
-        led1.schedule(Schedule::slow_odd()?);
+        led1.schedule(Schedule::slow_no_delay()?);
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::AlwaysOn),
             PressDuration::Long => Ok(Self::Sos),
@@ -81,8 +81,8 @@ impl LedState {
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
-        led0.schedule(Schedule::sos0()?);
-        led1.schedule(Schedule::sos1()?); // cmk switch to sos1
+        led0.schedule(Schedule::sos_slow()?);
+        led1.schedule(Schedule::sos_fast()?);
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::FastAlternate),
             PressDuration::Long => Ok(Self::Sos),
@@ -107,8 +107,8 @@ impl LedState {
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
-        led0.schedule(Schedule::default());
-        led1.schedule(Schedule::default());
+        led0.schedule(Schedule::off()?);
+        led1.schedule(Schedule::off()?);
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::FastAlternate),
             PressDuration::Long => Ok(Self::Sos),

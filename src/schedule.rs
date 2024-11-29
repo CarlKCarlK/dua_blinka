@@ -1,44 +1,43 @@
 use crate::{
-    error::Result,
+    error::{Error, Result},
     shared_const::{
-        FAST_FLASH_DELAY, MORSE_O_MILLIS, MORSE_S_MILLIS, ONE_DAY, SLOW_FLASH_DELAY, THREE_MILLIS,
-        ZERO_DELAY,
+        FAST_FLASH_DELAY, MORSE_DASH_MILLIS, MORSE_O_MILLIS, MORSE_S_MILLIS, ONE_DAY,
+        SCHEDULE_CAPACITY, SLOW_FLASH_DELAY, ZERO_DELAY,
     },
 };
 use embassy_time::Duration;
 use heapless::Vec;
 
-/// The schedule consists of an initial delay followed by a cycle of durations specifying the LED's on and off states.
+/// Represents a schedule for controlling an LED's on and off states.
 ///
-/// - **Initial Delay:** The `initial_delay` field represents the time the LED remains off before starting its on/off cycle.
-/// - **Cycle Durations:** The `cycle` vector contains durations that alternate the LED's state. It must have
-///   an even number of elements. If the number of elements is zero, the LED remains off after the initial delay.
+/// The schedule consists of an initial delay followed by a
+/// cycling pattern of durations specifying the LED's on and off states.
 ///
-/// # Example
-///
-/// This schedule introduces a 1-second initial delay, then alternates the LED on for 500 milliseconds and off for 300 milliseconds:
-///
-/// ```rust
-/// use core::time::Duration;
-/// use heapless::Vec;
-///
-/// let schedule = Schedule::new(Duration::from_secs(1),
-///    &[Duration::from_millis(500),
-///      Duration::from_millis(300)]);
-/// ```
+/// The pattern must have an even number of elements.
 #[derive(Debug, Default)]
 pub struct Schedule {
     /// The time the LED remains off before starting its on/off cycle.
     pub initial_delay: Duration,
-    /// A vector of durations that alternate the LED's state.
-    pub pattern: Vec<Duration, 20>, // const
+    /// A vector of cyclic durations that alternate the LED's state.
+    pub pattern: Vec<Duration, SCHEDULE_CAPACITY>,
 }
 
 impl Schedule {
-    pub fn new(initial_delay: Duration, pattern: Vec<Duration, 20>) -> Result<Self> {
+    /// Creates a new `Schedule` instance.
+    ///
+    /// # Arguments
+    ///
+    /// - `initial_delay`: The time the LED remains off before starting its on/off cycle.
+    /// - `pattern`: A vector of cyclic durations that alternate the LED's state. It must have an even number of elements.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the pattern length is not even.
+    pub fn new(initial_delay: Duration, pattern: Vec<Duration, SCHEDULE_CAPACITY>) -> Result<Self> {
+        // const
         if pattern.len() % 2 != 0 {
-            return Err(crate::error::Error::ScheduleCycleLengthMustBeEven);
-        };
+            return Err(Error::ScheduleCycleLengthMustBeEven);
+        }
 
         Ok(Self {
             initial_delay,
@@ -46,101 +45,81 @@ impl Schedule {
         })
     }
 
-    /// Creates a new `Schedule` instance.
+    /// Creates a new `Schedule` from an initial delay and a slice of durations.
     ///
     /// # Arguments
     ///
-    /// * `initial_delay` - The time the LED remains off before starting its on/off cycle.
-    /// * `slice` - A slice of durations that alternate the LED's state. It must have an even number of elements.
+    /// - `initial_delay`: The time the LED remains off before starting its on/off cycle.
+    /// - `slice`: A slice of cyclic durations that alternate the LED's state. It must have an even number of elements.
     ///
     /// # Errors
     ///
-    /// Returns an error if the slice length is not even or if the slice capacity is exceeded.
-    ///
-    /// # Example
-    ///
-    /// This schedule introduces a 1-second initial delay, then alternates the LED on for 500 milliseconds and off for 300 milliseconds:
-    ///
-    /// ```rust,ignore
-    /// use core::time::Duration;
-    /// use heapless::Vec;
-    ///
-    /// let schedule = Schedule::from_slice(Duration::from_secs(1),
-    ///   &[Duration::from_millis(500),
-    ///    Duration::from_millis(300)]);
+    /// Returns an error if the slice length is not even or if the slice exceeds the capacity of the vector.
     /// ```
     pub fn from_slice(initial_delay: Duration, slice: &[Duration]) -> Result<Self> {
-        let pattern =
-            Vec::from_slice(slice).map_err(|()| crate::error::Error::ScheduleCapacityExceeded)?;
+        let pattern = Vec::from_slice(slice).map_err(|()| Error::ScheduleCapacityExceeded)?;
         Self::new(initial_delay, pattern)
     }
 
-    // TODO: We could instead create these once statically.
-
-    /// cmk
-    ///
-    /// # Errors
-    pub fn fast_even() -> Result<Self> {
-        Self::from_slice(FAST_FLASH_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
-    }
-
-    /// cmk
-    ///
-    /// # Errors
-    pub fn fast_odd() -> Result<Self> {
+    /// Creates a schedule with a fast flashing pattern with no initial delay.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn fast_no_delay() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
     }
 
-    /// cmk
-    ///
-    /// # Errors
+    /// Creates a schedule with a fast flashing pattern after a short initial delay.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn fast_with_delay() -> Result<Self> {
+        Self::from_slice(FAST_FLASH_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
+    }
+
+    /// Creates a schedule with a slow flashing pattern with no initial delay.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn slow_no_delay() -> Result<Self> {
+        Self::from_slice(ZERO_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
+    }
+
+    /// Creates a schedule with a slow flashing pattern after a short initial delay.
+    #[allow(clippy::missing_errors_doc)]
     pub fn slow_even() -> Result<Self> {
         Self::from_slice(SLOW_FLASH_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
     }
 
-    /// cmk
-    ///
-    /// # Errors
-    pub fn slow_odd() -> Result<Self> {
-        Self::from_slice(ZERO_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
-    }
-
-    /// cmk
-    ///
-    /// # Errors
+    /// Creates a schedule with the LED always on.
+    #[allow(clippy::missing_errors_doc)]
     pub fn on() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[ONE_DAY, ZERO_DELAY])
-        // cmk const
     }
 
+    /// Creates a schedule with the LED always off.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn off() -> Result<Self> {
+        Ok(Self::default())
+    }
+
+    /// Creates a schedule for the "SOS" Morse code pattern.
     fn sos(dot_delay: u64, dot_after: u64, millis_per_dot: u32) -> Result<Self> {
         let mut sos = Vec::default();
-        sos.extend_from_slice(&MORSE_S_MILLIS)
-            .map_err(|()| crate::error::Error::ScheduleCapacityExceeded)?;
-        sos.push(THREE_MILLIS).map_err(|_| crate::error::Error::ScheduleCapacityExceeded)?;
-        sos.extend_from_slice(&MORSE_O_MILLIS)
-            .map_err(|()| crate::error::Error::ScheduleCapacityExceeded)?;
-        sos.push(THREE_MILLIS).map_err(|_| crate::error::Error::ScheduleCapacityExceeded)?;
-        sos.extend_from_slice(&MORSE_S_MILLIS)
-            .map_err(|()| crate::error::Error::ScheduleCapacityExceeded)?;
-        sos.push(Duration::from_millis(dot_after))
-            .map_err(|_| crate::error::Error::ScheduleCapacityExceeded)?;
+        sos.extend_from_slice(&MORSE_S_MILLIS).map_err(|()| Error::ScheduleCapacityExceeded)?;
+        sos.push(MORSE_DASH_MILLIS).map_err(|_| Error::ScheduleCapacityExceeded)?;
+        sos.extend_from_slice(&MORSE_O_MILLIS).map_err(|()| Error::ScheduleCapacityExceeded)?;
+        sos.push(MORSE_DASH_MILLIS).map_err(|_| Error::ScheduleCapacityExceeded)?;
+        sos.extend_from_slice(&MORSE_S_MILLIS).map_err(|()| Error::ScheduleCapacityExceeded)?;
+        sos.push(Duration::from_millis(dot_after)).map_err(|_| Error::ScheduleCapacityExceeded)?;
 
         sos.iter_mut().for_each(|x| *x *= millis_per_dot);
         Self::new(Duration::from_millis(dot_delay * u64::from(millis_per_dot)), sos)
     }
 
-    /// cmk
-    ///
-    /// # Errors
-    pub fn sos0() -> Result<Self> {
+    /// Creates a schedule for the "SOS" with each dot at 120 milliseconds.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn sos_slow() -> Result<Self> {
         Self::sos(5, 50, 120)
     }
 
-    /// cmk
-    ///
-    /// # Errors
-    pub fn sos1() -> Result<Self> {
+    /// Creates a schedule for the "SOS" with each dot at 60 milliseconds and a long initial delay.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn sos_fast() -> Result<Self> {
         Self::sos(100, 10, 60)
     }
 }
