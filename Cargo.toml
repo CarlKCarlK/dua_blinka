@@ -36,7 +36,6 @@ embassy-time = { version = "0.3.2", features = [
     "defmt",
     "defmt-timestamp-uptime",
 ] }
-enum-iterator = "2.1.0"
 derive_more = { version = "1.0.0", default-features = false, features = [
     "debug",
     "display",
@@ -80,13 +79,13 @@ rpath = false
 bare_trait_objects = "forbid"
 rust_2018_idioms = { level = "warn", priority = -2 }
 # TODO: Remove when this is stabilized and/or works better. It's giving many false positives at time of writing (2024-08).
-unfulfilled_lint_expectations = "allow"
-unknown_lints = "allow"
+unfulfilled_lint_expectations = "warn"
+unknown_lints = "warn"
 unsafe_code = "deny"
 unused_variables = "warn"
 # TODO: Determine why `#[expect(unexpected_cfgs)]` at the site of the problem
 #       (`target_pointer_width = 128`) is ineffective; the setting below is overly broad
-unexpected_cfgs = "allow"
+unexpected_cfgs = "warn"
 
 # Uncomment before ship to reconcile use of possibly redundant crates, debug remnants, missing
 # license files and more
@@ -99,9 +98,9 @@ arithmetic_side_effects = "deny"
 float_cmp_const = "deny"
 indexing_slicing = "deny"
 pedantic = { level = "deny", priority = -2 }
-semicolon_if_nothing_returned = "allow"
-semicolon_inside_block = "allow"
-str_to_string = "allow"
+semicolon_if_nothing_returned = "warn"
+semicolon_inside_block = "warn"
+str_to_string = "warn"
 unwrap_used = "deny"
 wildcard_imports = "deny"
 
@@ -111,43 +110,43 @@ nursery = { level = "warn", priority = -2 }
 
 allow_attributes = "warn"
 allow_attributes_without_reason = "deny"
-cargo_common_metadata = { level = "allow", priority = -1 }
-doc_markdown = "allow"
+# cmk cargo_common_metadata = { level = "warn", priority = -1 }
+# cmk doc_markdown = "warn"
 enum_glob_use = "forbid"
-enum_variant_names = "allow"
-equatable_if_let = "allow"
+enum_variant_names = "warn"
+equatable_if_let = "warn"
 error_impl_error = "allow"
 implicit_return = "allow"
-integer_division_remainder_used = "allow"
-items-after-statements = "allow"
-iter_nth_zero = "allow"
-match_bool = "allow"
-match-same-arms = "allow"
-min_ident_chars = "allow"
+integer_division_remainder_used = "warn"
+items-after-statements = "warn"
+iter_nth_zero = "warn"
+match_bool = "warn"
+match-same-arms = "warn"
+min_ident_chars = "warn"
 missing_docs_in_private_items = { level = "allow", priority = -1 }
-missing_errors_doc = "allow"
-missing_trait_methods = "allow"
-module_name_repetitions = "allow"
+missing_errors_doc = "warn"
+missing_trait_methods = "warn"
+module_name_repetitions = "warn"
 multiple_crate_versions = "allow"
-obfuscated_if_else = "allow"
+obfuscated_if_else = "warn"
 pub_use = "allow"
-pub_with_shorthand = "allow"
+pub_with_shorthand = "warn"
 question_mark_used = "allow"
-self_named_module_files = "allow"
-semicolon_outside_block = "allow"
-separated_literal_suffix = "allow"
-shadow_reuse = "allow"
-shadow_unrelated = "allow"
-similar_names = "allow"
+self_named_module_files = "warn"
+semicolon_outside_block = "warn"
+separated_literal_suffix = "warn"
+shadow_reuse = "warn"
+shadow_unrelated = "warn"
+similar_names = "warn"
 single_call_fn = "allow"
-std_instead_of_alloc = "allow"
-std_instead_of_core = "allow"
-too_long_first_doc_paragraph = "allow"
-unnecessary_wraps = "allow"
-unreachable = "allow"
+std_instead_of_alloc = "warn"
+std_instead_of_core = "warn"
+too_long_first_doc_paragraph = "warn"
+unnecessary_wraps = "warn"
+unreachable = "warn"
 
 # TODO: Uncomment before ship to reconcile use of possibly redundant crates, debug remnants, missing
 # license files and more
-#blanket_clippy_restriction_lints = "allow"
+# blanket_clippy_restriction_lints = "warn"
 #cargo = "warn"
-#restriction = "warn"
+# restriction = "warn"

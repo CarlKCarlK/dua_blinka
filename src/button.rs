@@ -10,6 +10,7 @@ pub struct Button<'a>(Input<'a>);
 impl<'a> Button<'a> {
     /// Creates a new `Button` instance.
     #[must_use]
+    #[inline]
     pub const fn new(button: Input<'a>) -> Self {
         Self(button)
     }
@@ -54,7 +55,7 @@ impl<'a> Button<'a> {
         self
     }
 
-    // wait for the button to be released
+    /// wait for the button to be released
     async fn wait_for_button_up(&mut self) -> &mut Self {
         self.0.wait_for_low().await;
         self

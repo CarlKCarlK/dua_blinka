@@ -4,7 +4,7 @@ use derive_more::derive::{Display, Error, From};
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// Define a unified error type for this crate.
-#[expect(missing_docs, reason = "We don't need to document the variants of this enum.")]
+// cmk #[expect(missing_docs, reason = "We don't need to document the variants of this enum.")]
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
     // `#[error(not(source))]` below tells `derive_more` that `embassy_executor::SpawnError` does

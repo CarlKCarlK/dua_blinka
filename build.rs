@@ -5,12 +5,13 @@
 //! Linker scripts like `memory.x` are not normally a part of the build process and changes to it
 //! would ordinarily be ignored by the build process.
 
+use core::error::Error;
 use std::{env, fs::File, io::Write, path::PathBuf};
 
-fn main() -> Result<(), Box<dyn core::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Put `memory.x` in our output directory and ensure it's on the linker search path.
     let out =
-        &PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR environment variable is not set"));
+        &PathBuf::from(env::var_os("OUT_DIR").ok_or("OUT_DIR environment variable is not set")?);
     File::create(out.join("memory.x"))?.write_all(include_bytes!("memory.x"))?;
     println!("cargo:rustc-link-search={}", out.display());
 

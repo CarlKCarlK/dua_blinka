@@ -37,6 +37,7 @@ impl LedState {
         }
     }
 
+    #[inline]
     async fn run_and_next_fast_alternate(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
@@ -50,6 +51,7 @@ impl LedState {
         }
     }
 
+    #[inline]
     async fn run_and_next_fast_together(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
@@ -63,6 +65,7 @@ impl LedState {
         }
     }
 
+    #[inline]
     async fn run_and_next_slow_alternate(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
@@ -76,6 +79,7 @@ impl LedState {
         }
     }
 
+    #[inline]
     async fn run_and_next_sos(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
@@ -89,6 +93,7 @@ impl LedState {
         }
     }
 
+    #[inline]
     async fn run_and_next_always_on(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
@@ -102,6 +107,7 @@ impl LedState {
         }
     }
 
+    #[inline]
     async fn run_and_next_always_off(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,

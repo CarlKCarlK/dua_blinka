@@ -34,8 +34,8 @@ impl Schedule {
     ///
     /// Returns an error if the pattern length is not even.
     pub fn new(initial_delay: Duration, pattern: Vec<Duration, SCHEDULE_CAPACITY>) -> Result<Self> {
-        // const
-        if pattern.len() % 2 != 0 {
+        if pattern.len() & 1 != 0 {
+            // detect odd length
             return Err(Error::ScheduleCycleLengthMustBeEven);
         }
 
@@ -111,7 +111,7 @@ impl Schedule {
         for duration in &mut sos {
             *duration = Duration::from_ticks(
                 duration.as_ticks().checked_mul(millis_per_dot).ok_or(Error::ArithmeticOverflow)?,
-            )
+            );
         }
 
         // Calculate the initial delay, checking for overflow
