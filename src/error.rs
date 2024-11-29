@@ -1,8 +1,10 @@
 use derive_more::derive::{Display, Error, From};
 
+/// A specialized `Result` where the error is this crate's `Error` type.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// Define a unified error type for this crate.
+#[allow(missing_docs)] // We don't need to document the variants of this enum.
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
     // `#[error(not(source))]` below tells `derive_more` that `embassy_executor::SpawnError` does
@@ -15,4 +17,7 @@ pub enum Error {
 
     #[display("Failed to create schedule from slice: capacity exceeded")]
     ScheduleCapacityExceeded,
+
+    #[display("Schedule cycle length must be even")]
+    ScheduleCycleLengthMustBeEven,
 }

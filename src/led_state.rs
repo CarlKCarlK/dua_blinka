@@ -1,7 +1,12 @@
-use crate::{button::Button, error::Result, led::Led, press_duration::PressDuration, Schedule};
+use crate::{button::Button, button::PressDuration, error::Result, led::Led, Schedule};
 
-#[derive(Debug, defmt::Format)]
+/// Represents the different states an LED can operate in.
+///
+/// For example, an `Led` in `Sos` state sends the Morse code distress signal.
+#[allow(missing_docs)] // We don't need to document the variants of this enum.
+#[derive(Debug, defmt::Format, Default)]
 pub enum LedState {
+    #[default]
     FastAlternate,
     FastTogether,
     SlowAlternate,
@@ -76,8 +81,8 @@ impl LedState {
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
-        led0.schedule(Schedule::sos_even()?);
-        led1.schedule(Schedule::sos_odd()?);
+        led0.schedule(Schedule::sos0()?);
+        led1.schedule(Schedule::sos1()?); // cmk switch to sos1
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::FastAlternate),
             PressDuration::Long => Ok(Self::Sos),
@@ -102,17 +107,11 @@ impl LedState {
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
-        led0.schedule(Schedule::off());
-        led1.schedule(Schedule::off());
+        led0.schedule(Schedule::default());
+        led1.schedule(Schedule::default());
         match button.press_duration().await {
             PressDuration::Short => Ok(Self::FastAlternate),
             PressDuration::Long => Ok(Self::Sos),
         }
-    }
-}
-
-impl Default for LedState {
-    fn default() -> Self {
-        Self::FastAlternate
     }
 }

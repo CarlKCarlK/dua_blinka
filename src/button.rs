@@ -1,5 +1,5 @@
-use crate::press_duration::PressDuration;
 use crate::shared_const::{BUTTON_DEBOUNCE_DELAY, LONG_PRESS_DURATION};
+use derive_more::Display;
 use embassy_futures::select::{select, Either};
 use embassy_rp::gpio::Input;
 use embassy_time::Timer;
@@ -14,6 +14,10 @@ impl<'a> Button<'a> {
         Self(button)
     }
 
+    /// Measures the duration of a button press but does not wait for the button to be released.
+    ///
+    /// This method does not wait for the button to be released.  It only waits
+    /// as long as necessary to determine whether the press was "short" or "long".
     pub async fn press_duration(&mut self) -> PressDuration {
         // wait for the button to be released
         self.wait_for_button_up().await;
@@ -61,4 +65,15 @@ impl<'a> Button<'a> {
         self.0.wait_for_falling_edge().await;
         self
     }
+}
+
+// Instead of having API describing a short vs a long button-press vaguely using a `bool`, we define
+// an `enum` to clarify what each state represents.  The compiler will compile this down to the
+// very same `boolean` that we would have coded by hand.
+/// How long a button was pressed.
+#[allow(missing_docs)] // We don't need to document the variants of this enum.
+#[derive(Clone, Copy, Debug, Display, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum PressDuration {
+    Short,
+    Long,
 }

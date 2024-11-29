@@ -13,6 +13,7 @@ use crate::Schedule;
 pub struct Led<'a> {
     notifier: &'a LedNotifier,
 }
+/// Type alias for notifier that sends messages an `Led`.
 #[allow(
     clippy::module_name_repetitions,
     reason = "We use the prefix because other structs may need their own notifier type."
@@ -42,6 +43,20 @@ impl Led<'_> {
         Ok(led)
     }
 
+    /// Creates a new `LedNotifier` instance.
+    ///
+    /// This notifier is used to send messages to the `Led`.
+    ///
+    /// The  `LedNotifier` instance should be assigned to a static variable
+    /// and passed to the `Led::new()` method.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// #[allow(clippy::items_after_statements)]
+    /// static CLOCK_NOTIFIER: ClockNotifier = Clock::notifier();
+    /// let mut clock = Clock::new(hardware.cells, hardware.segments, &CLOCK_NOTIFIER, spawner)?;
+    /// ```
     #[must_use]
     pub const fn notifier() -> LedNotifier {
         Signal::new()
@@ -66,28 +81,35 @@ impl Led<'_> {
 async fn device_loop(mut pin: Output<'static>, notifier: &'static LedNotifier) -> ! {
     let mut schedule = Schedule::default();
     // Drive the LED's behavior forever.
-    let mut index = 0;
     loop {
-        info!("led_driver: index: {}", index);
-        // if the schedule is empty or contains just one duration, turn off the LED and wait for a new schedule.
-        if schedule.len() <= 1 {
-            pin.set_low();
-            schedule = notifier.wait().await;
-            continue;
-        }
-        debug_assert!(index < schedule.len(), "real assert");
-        pin.set_level((index % 2 == 1).into());
+        // Keep the LED off the the initial delay.
+        pin.set_low(); // Turn off the LED.
         if let Either::Second(new_schedule) =
-            select(Timer::after(schedule[index]), notifier.wait()).await
+            select(Timer::after(schedule.initial_delay), notifier.wait()).await
         {
             info!("new schedule");
             schedule = new_schedule;
-            index = 0;
             continue;
         }
 
-        // increment index, wrapping around to 1 if we reach the end of the schedule
-        index = (index % (schedule.len() - 1)) + 1;
-        debug_assert!(0 < index && index < schedule.len(), "real assert");
+        // If the schedule is empty, wait for a new schedule with the LED off.
+        if schedule.pattern.is_empty() {
+            info!("new schedule");
+            schedule = notifier.wait().await;
+            continue;
+        }
+
+        // Cycle forever through the schedule, toggling the LED on and off.
+        // until a new schedule is received.
+        for duration in schedule.pattern.iter().cycle() {
+            pin.toggle();
+            if let Either::Second(new_schedule) =
+                select(Timer::after(*duration), notifier.wait()).await
+            {
+                info!("new schedule");
+                schedule = new_schedule;
+                break;
+            }
+        }
     }
 }
