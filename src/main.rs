@@ -3,24 +3,6 @@
 //! Runs on a Raspberry Pi Pico RP2040. See the `README.md` for more information.
 #![no_std]
 #![no_main]
-#![warn(
-    clippy::pedantic,
-    clippy::nursery,
-     clippy::use_self,
-     unused_lifetimes,
-    missing_docs,
-     single_use_lifetimes,
-     unreachable_pub,
-    // TODO: clippy::cargo,
-    clippy::perf,
-    clippy::style,
-    clippy::complexity,
-    clippy::correctness,
-    clippy::must_use_candidate,
-    // TODO: clippy::cargo_common_metadata
-    clippy::unwrap_used, clippy::unwrap_used, // Warns if you're using .unwrap() or .expect(), which can be a sign of inadequate error handling.
-    clippy::panic_in_result_fn, // Ensures functions that return Result do not contain panic!, which could be inappropriate in production code.
-)]
 #![allow(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
 
 use defmt_rtt as _;
@@ -44,8 +26,11 @@ async fn main(spawner: Spawner) -> ! {
 // Rust's `!` is also not yet stable for use as anything other than a naked function return type.
 // That is why `inner_main()` uses a locally-defined "never" type called `Never` which serves
 // exactly the same purpose as `!`, inside a `Result`.
-#[allow(clippy::items_after_statements)]
-#[allow(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
+#[expect(
+    clippy::items_after_statements,
+    reason = "Keeps related code together and avoids name conflicts"
+)]
+#[expect(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
 async fn inner_main(spawner: Spawner) -> Result<Never> {
     let hardware = lib::Hardware::default();
 

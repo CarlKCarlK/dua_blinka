@@ -47,6 +47,11 @@ pub const MORSE_O_MILLIS: [Duration; 5] =
 /// # Returns
 ///
 /// An array where each input duration is followed by the padding duration.
+#[expect(
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
+    reason = "Used with const, so any errors will be caught at compile time."
+)]
 const fn pad<const N: usize, const M: usize>(
     input: [Duration; N],
     padding: Duration,

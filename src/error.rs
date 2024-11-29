@@ -4,7 +4,7 @@ use derive_more::derive::{Display, Error, From};
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// Define a unified error type for this crate.
-#[allow(missing_docs)] // We don't need to document the variants of this enum.
+#[expect(missing_docs, reason = "We don't need to document the variants of this enum.")]
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
     // `#[error(not(source))]` below tells `derive_more` that `embassy_executor::SpawnError` does
@@ -20,4 +20,7 @@ pub enum Error {
 
     #[display("Schedule cycle length must be even")]
     ScheduleCycleLengthMustBeEven,
+
+    #[display("Arithmetic overflow")]
+    ArithmeticOverflow,
 }

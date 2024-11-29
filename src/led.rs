@@ -14,7 +14,7 @@ pub struct Led<'a> {
     notifier: &'a LedNotifier,
 }
 /// Type alias for notifier that sends messages an `Led`.
-#[allow(
+#[expect(
     clippy::module_name_repetitions,
     reason = "We use the prefix because other structs may need their own notifier type."
 )]

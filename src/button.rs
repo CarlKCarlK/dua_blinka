@@ -71,7 +71,7 @@ impl<'a> Button<'a> {
 // an `enum` to clarify what each state represents.  The compiler will compile this down to the
 // very same `boolean` that we would have coded by hand.
 /// How long a button was pressed.
-#[allow(missing_docs)] // We don't need to document the variants of this enum.
+#[expect(missing_docs, reason = "We don't need to document the variants of this enum.")]
 #[derive(Clone, Copy, Debug, Display, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum PressDuration {
     Short,

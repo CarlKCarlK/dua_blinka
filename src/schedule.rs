@@ -62,43 +62,43 @@ impl Schedule {
     }
 
     /// Creates a schedule with a fast flashing pattern with no initial delay.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn fast_no_delay() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
     }
 
     /// Creates a schedule with a fast flashing pattern after a short initial delay.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn fast_with_delay() -> Result<Self> {
         Self::from_slice(FAST_FLASH_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
     }
 
     /// Creates a schedule with a slow flashing pattern with no initial delay.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn slow_no_delay() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
     }
 
     /// Creates a schedule with a slow flashing pattern after a short initial delay.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn slow_even() -> Result<Self> {
         Self::from_slice(SLOW_FLASH_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
     }
 
     /// Creates a schedule with the LED always on.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn on() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[ONE_DAY, ZERO_DELAY])
     }
 
     /// Creates a schedule with the LED always off.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn off() -> Result<Self> {
         Ok(Self::default())
     }
 
     /// Creates a schedule for the "SOS" Morse code pattern.
-    fn sos(dot_delay: u64, dot_after: u64, millis_per_dot: u32) -> Result<Self> {
+    fn sos(dot_delay: u64, dot_after: u64, millis_per_dot: u64) -> Result<Self> {
         let mut sos = Vec::default();
         sos.extend_from_slice(&MORSE_S_MILLIS).map_err(|()| Error::ScheduleCapacityExceeded)?;
         sos.push(MORSE_DASH_MILLIS).map_err(|_| Error::ScheduleCapacityExceeded)?;
@@ -107,18 +107,29 @@ impl Schedule {
         sos.extend_from_slice(&MORSE_S_MILLIS).map_err(|()| Error::ScheduleCapacityExceeded)?;
         sos.push(Duration::from_millis(dot_after)).map_err(|_| Error::ScheduleCapacityExceeded)?;
 
-        sos.iter_mut().for_each(|x| *x *= millis_per_dot);
-        Self::new(Duration::from_millis(dot_delay * u64::from(millis_per_dot)), sos)
+        // Adjust each duration by multiplying with millis_per_dot, checking for overflow
+        for duration in &mut sos {
+            *duration = Duration::from_ticks(
+                duration.as_ticks().checked_mul(millis_per_dot).ok_or(Error::ArithmeticOverflow)?,
+            )
+        }
+
+        // Calculate the initial delay, checking for overflow
+        let initial_delay = Duration::from_ticks(
+            dot_delay.checked_mul(millis_per_dot).ok_or(Error::ArithmeticOverflow)?,
+        );
+
+        Self::new(initial_delay, sos)
     }
 
     /// Creates a schedule for the "SOS" with each dot at 120 milliseconds.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn sos_slow() -> Result<Self> {
         Self::sos(5, 50, 120)
     }
 
     /// Creates a schedule for the "SOS" with each dot at 60 milliseconds and a long initial delay.
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn sos_fast() -> Result<Self> {
         Self::sos(100, 10, 60)
     }

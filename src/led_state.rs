@@ -3,7 +3,7 @@ use crate::{button::Button, button::PressDuration, error::Result, led::Led, Sche
 /// Represents the different states an LED can operate in.
 ///
 /// For example, an `Led` in `Sos` state sends the Morse code distress signal.
-#[allow(missing_docs)] // We don't need to document the variants of this enum.
+#[expect(missing_docs, reason = "We don't need to document the variants of this enum.")]
 #[derive(Debug, defmt::Format, Default)]
 pub enum LedState {
     #[default]
