@@ -7,8 +7,6 @@ use embassy_time::Timer;
 
 use crate::Schedule;
 
-// cmk will need to rename this project from blinky_carlk2
-
 /// Type representing the physical LED and its "display" mode.
 pub struct Led<'a> {
     notifier: &'a LedNotifier,
@@ -53,7 +51,7 @@ impl Led<'_> {
     /// # Example
     ///
     /// ```rust,ignore
-    /// #[allow(clippy::items_after_statements)]
+    /// #[expect(clippy::items_after_statements, reason = "Keeps related code together and avoids name conflicts")]
     /// static CLOCK_NOTIFIER: ClockNotifier = Clock::notifier();
     /// let mut clock = Clock::new(hardware.cells, hardware.segments, &CLOCK_NOTIFIER, spawner)?;
     /// ```

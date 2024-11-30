@@ -109,15 +109,18 @@ impl Schedule {
 
         // Adjust each duration by multiplying with millis_per_dot, checking for overflow
         for duration in &mut sos {
-            *duration = Duration::from_ticks(
-                duration.as_ticks().checked_mul(millis_per_dot).ok_or(Error::ArithmeticOverflow)?,
-            );
+            *duration = duration
+                .as_ticks()
+                .checked_mul(millis_per_dot)
+                .ok_or(Error::ArithmeticOverflow)
+                .map(Duration::from_ticks)?;
         }
 
         // Calculate the initial delay, checking for overflow
-        let initial_delay = Duration::from_ticks(
-            dot_delay.checked_mul(millis_per_dot).ok_or(Error::ArithmeticOverflow)?,
-        );
+        let initial_delay = dot_delay
+            .checked_mul(millis_per_dot)
+            .ok_or(Error::ArithmeticOverflow)
+            .map(Duration::from_ticks)?;
 
         Self::new(initial_delay, sos)
     }

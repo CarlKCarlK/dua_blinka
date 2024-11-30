@@ -1,4 +1,4 @@
-# blinky_carl2
+# dua_blinka
 
 * Two virtual (and real) LEDs, working in parallel.
 * If you hold the button, the LEDs send SOS.

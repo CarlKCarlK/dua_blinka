@@ -51,4 +51,4 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     }
 }
 
-// cmk at least do enough CI to compile
+// TODO: at least do enough CI to compile
