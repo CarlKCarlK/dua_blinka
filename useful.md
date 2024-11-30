@@ -1,13 +1,16 @@
 # Useful Commands
 
-## Simulating (new)
+## Emulation (new)
 
 ```cmd
-pip3 install -r C:\deldir\1124\Renode_RP2040\visualization\requirements.txt
-renode --console run_dua_blinka.rescs
+python3 -m pip3 install -r C:\deldir\1124\Renode_RP2040\visualization\requirements.txt
+cd tests
+renode --console run_dua_blinka.resc
+startVisualization 8080
+s
 ```
 
-## Simulating (old)
+## Emulation (old)
 
 Get the main branch of Renode 2040.
 

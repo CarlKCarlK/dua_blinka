@@ -4,18 +4,18 @@ use embassy_rp::{
 };
 
 /// Represents the hardware components of the clock.
-pub struct Hardware {
+pub struct Hardware<'a> {
     /// An LED
-    pub led0: gpio::Output<'static>,
+    pub led0: gpio::Output<'a>,
     /// Another LED
-    pub led1: gpio::Output<'static>,
+    pub led1: gpio::Output<'a>,
     /// The button that controls the clock.
-    pub button: gpio::Input<'static>,
+    pub button: gpio::Input<'a>,
     /// The second core of the RP2040 (not currently used).
     pub core1: CORE1,
 }
 
-impl Default for Hardware {
+impl Default for Hardware<'_> {
     fn default() -> Self {
         let peripherals: embassy_rp::Peripherals =
             embassy_rp::init(embassy_rp::config::Config::default());
