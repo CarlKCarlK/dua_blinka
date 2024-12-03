@@ -5,6 +5,7 @@
 #![no_main]
 #![allow(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
 
+use defmt::info;
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use lib::{Button, Led, LedNotifier, LedState, Never, Result};
@@ -33,6 +34,8 @@ async fn main(spawner: Spawner) -> ! {
 #[expect(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
 async fn inner_main(spawner: Spawner) -> Result<Never> {
     let hardware = lib::Hardware::default();
+    info!("size of hardware: {:?}", core::mem::size_of_val(&hardware));
+    info!("size of hardware: {:?}", core::mem::size_of::<lib::Hardware<'_>>());
 
     static LED_NOTIFIER0: LedNotifier = Led::notifier();
     let mut led0 = Led::new(hardware.led0, &LED_NOTIFIER0, spawner)?;
