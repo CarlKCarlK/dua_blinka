@@ -5,4 +5,4 @@ include @run_firmware.resc
 startVisualization 1212
 
 visualizationSetBoardElement led 
-visualizationLoadLayout dua_blinka_layout.json
+visualizationLoadLayout @dua_blinka_layout.json

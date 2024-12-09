@@ -4,33 +4,34 @@
             "mcus": {
                 "mcu": {
                     "position": {
-                        "column": 50,
-                        "row": 4
+                        "column": 51,
+                        "row": 5
                     }
                 }
             },
             "leds": {
                 "led1": {
                     "position": {
-                        "column": 44,
-                        "row": 8
+                        "column": 45,
+                        "row": 4
                     }
                 },
                 "led2": {
                     "position": {
-                        "column": 54,
-                        "row": 8
+                        "column": 47,
+                        "row": 4
                     }
                 }
             },
             "buttons": {
                 "button": {
                     "position": {
-                        "column": 37,
-                        "row": 4
+                        "column": 41,
+                        "row": 7
                     }
                 }
             },
+            "segmentDisplays": {}
         }
     ]
 }
