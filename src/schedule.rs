@@ -11,15 +11,15 @@ use heapless::Vec;
 /// Represents a schedule for controlling an LED's on and off states.
 ///
 /// The schedule consists of an initial delay followed by a
-/// cycling pattern of durations specifying the LED's on and off states.
+/// cycling `on_off_durations`.
 ///
-/// The pattern must have an even number of elements.
+/// The `on_off_durations` must have an even number of elements.
 #[derive(Debug, Default)]
 pub struct Schedule {
     /// The time the LED remains off before starting its on/off cycle.
     pub initial_delay: Duration,
     /// A vector of cyclic durations that alternate the LED's state.
-    pub pattern: Vec<Duration, SCHEDULE_CAPACITY>,
+    pub on_off_durations: Vec<Duration, SCHEDULE_CAPACITY>,
 }
 
 impl Schedule {
@@ -28,20 +28,23 @@ impl Schedule {
     /// # Arguments
     ///
     /// - `initial_delay`: The time the LED remains off before starting its on/off cycle.
-    /// - `pattern`: A vector of cyclic durations that alternate the LED's state. It must have an even number of elements.
+    /// - `on_off_durations`: A vector of cyclic durations that alternate the LED's state. It must have an even number of elements.
     ///
     /// # Errors
     ///
-    /// Returns an error if the pattern length is not even.
-    pub fn new(initial_delay: Duration, pattern: Vec<Duration, SCHEDULE_CAPACITY>) -> Result<Self> {
-        if pattern.len() & 1 != 0 {
+    /// Returns an error if the `on_off_durations` length is not even.
+    fn new(
+        initial_delay: Duration,
+        on_off_durations: Vec<Duration, SCHEDULE_CAPACITY>,
+    ) -> Result<Self> {
+        if on_off_durations.len() & 1 != 0 {
             // detect odd length
             return Err(Error::ScheduleCycleLengthMustBeEven);
         }
 
         Ok(Self {
             initial_delay,
-            pattern,
+            on_off_durations,
         })
     }
 
@@ -56,30 +59,31 @@ impl Schedule {
     ///
     /// Returns an error if the slice length is not even or if the slice exceeds the capacity of the vector.
     /// ```
-    pub fn from_slice(initial_delay: Duration, slice: &[Duration]) -> Result<Self> {
-        let pattern = Vec::from_slice(slice).map_err(|()| Error::ScheduleCapacityExceeded)?;
-        Self::new(initial_delay, pattern)
+    fn from_slice(initial_delay: Duration, slice: &[Duration]) -> Result<Self> {
+        let on_off_durations =
+            Vec::from_slice(slice).map_err(|()| Error::ScheduleCapacityExceeded)?;
+        Self::new(initial_delay, on_off_durations)
     }
 
-    /// Creates a schedule with a fast flashing pattern with no initial delay.
+    /// Creates a schedule with a fast flashing `on_off_durations` with no initial delay.
     #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn fast_no_delay() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
     }
 
-    /// Creates a schedule with a fast flashing pattern after a short initial delay.
+    /// Creates a schedule with a fast flashing `on_off_durations` after a short initial delay.
     #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn fast_with_delay() -> Result<Self> {
         Self::from_slice(FAST_FLASH_DELAY, &[FAST_FLASH_DELAY, FAST_FLASH_DELAY])
     }
 
-    /// Creates a schedule with a slow flashing pattern with no initial delay.
+    /// Creates a schedule with a slow flashing `on_off_durations` with no initial delay.
     #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn slow_no_delay() -> Result<Self> {
         Self::from_slice(ZERO_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
     }
 
-    /// Creates a schedule with a slow flashing pattern after a short initial delay.
+    /// Creates a schedule with a slow flashing `on_off_durations` after a short initial delay.
     #[expect(clippy::missing_errors_doc, reason = "These inputs avoid errors.")]
     pub fn slow_even() -> Result<Self> {
         Self::from_slice(SLOW_FLASH_DELAY, &[SLOW_FLASH_DELAY, SLOW_FLASH_DELAY])
@@ -97,7 +101,7 @@ impl Schedule {
         Ok(Self::default())
     }
 
-    /// Creates a schedule for the "SOS" Morse code pattern.
+    /// Creates a schedule for the "SOS" Morse code `on_off_durations`.
     fn sos(dot_delay: u64, dot_after: u64, millis_per_dot: u64) -> Result<Self> {
         let mut sos = Vec::default();
         sos.extend_from_slice(&MORSE_S_MILLIS).map_err(|()| Error::ScheduleCapacityExceeded)?;

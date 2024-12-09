@@ -18,7 +18,7 @@ pub struct Led<'a> {
 )]
 pub type LedNotifier = Signal<CriticalSectionRawMutex, Schedule>;
 
-impl Led<'_> {
+impl<'a> Led<'a> {
     /// Create a new `Led`, which entails starting an Embassy task.
     ///
     /// # Arguments
@@ -91,7 +91,7 @@ async fn device_loop(mut pin: Output<'static>, notifier: &'static LedNotifier) -
         }
 
         // If the schedule is empty, wait for a new schedule with the LED off.
-        if schedule.pattern.is_empty() {
+        if schedule.on_off_durations.is_empty() {
             info!("new schedule");
             schedule = notifier.wait().await;
             continue;
@@ -99,7 +99,7 @@ async fn device_loop(mut pin: Output<'static>, notifier: &'static LedNotifier) -
 
         // Cycle forever through the schedule, toggling the LED on and off.
         // until a new schedule is received.
-        for duration in schedule.pattern.iter().cycle() {
+        for duration in schedule.on_off_durations.iter().cycle() {
             pin.toggle();
             if let Either::Second(new_schedule) =
                 select(Timer::after(*duration), notifier.wait()).await

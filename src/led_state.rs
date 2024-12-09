@@ -1,6 +1,11 @@
-use crate::{button::Button, button::PressDuration, error::Result, led::Led, Schedule};
+use crate::{
+    button::{Button, PressDuration},
+    error::Result,
+    led::Led,
+    Schedule,
+};
 
-/// Represents the different states an LED can operate in.
+/// Represents the different states the LEDs can operate in.
 ///
 /// For example, an `Led` in `Sos` state sends the Morse code distress signal.
 #[expect(missing_docs, reason = "We don't need to document the variants of this enum.")]

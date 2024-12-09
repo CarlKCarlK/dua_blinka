@@ -5,7 +5,6 @@
 #![no_main]
 #![allow(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
 
-use defmt::info;
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use lib::{Button, Led, LedNotifier, LedState, Never, Result};
@@ -27,26 +26,20 @@ async fn main(spawner: Spawner) -> ! {
 // Rust's `!` is also not yet stable for use as anything other than a naked function return type.
 // That is why `inner_main()` uses a locally-defined "never" type called `Never` which serves
 // exactly the same purpose as `!`, inside a `Result`.
-#[expect(
-    clippy::items_after_statements,
-    reason = "Keeps related code together and avoids name conflicts"
-)]
 #[expect(clippy::future_not_send, reason = "Safe in single-threaded, bare-metal embedded context")]
+#[expect(clippy::items_after_statements, reason = "Keeps related code together")]
 async fn inner_main(spawner: Spawner) -> Result<Never> {
-    let hardware = lib::Hardware::default();
-    info!("size of hardware: {:?}", core::mem::size_of_val(&hardware));
-    info!("size of hardware: {:?}", core::mem::size_of::<lib::Hardware<'_>>());
+    // Initialize the hardware.
+    let hardware: lib::Hardware<'_> = lib::Hardware::default();
 
+    // Start virtual peripherals.
     static LED_NOTIFIER0: LedNotifier = Led::notifier();
     let mut led0 = Led::new(hardware.led0, &LED_NOTIFIER0, spawner)?;
     static LED_NOTIFIER1: LedNotifier = Led::notifier();
     let mut led1 = Led::new(hardware.led1, &LED_NOTIFIER1, spawner)?;
     let mut button = Button::new(hardware.button);
 
-    // Even though we are `loop`ing forever, the loop will spend most of its time paused, waiting
-    // for the user to press a button.  This saves huge amounts of power over "busy-waiting".
-
-    // Run the state machine
+    // Run the state machine.
     let mut state = LedState::default();
     loop {
         defmt::info!("State: {:?}", state);
