@@ -1,6 +1,6 @@
 # Useful Commands
 
-## Emulation (new)
+## Emulation (new) cmk update
 
 ```cmd
 python3 -m pip install -r C:\deldir\1124\Renode_RP2040\visualization\requirements.txt
