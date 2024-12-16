@@ -36,9 +36,8 @@ impl<'a> Led<'a> {
         notifier: &'static LedNotifier,
         spawner: Spawner,
     ) -> Result<Self, SpawnError> {
-        let led = Self { notifier };
         spawner.spawn(device_loop(pin, notifier))?;
-        Ok(led)
+        Ok(Self { notifier })
     }
 
     /// Creates a new `LedNotifier` instance.
