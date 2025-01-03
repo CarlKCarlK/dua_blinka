@@ -14,13 +14,15 @@
                     "position": {
                         "column": 45,
                         "row": 4
-                    }
+                    },
+                    "color": "#0000ff"
                 },
                 "led2": {
                     "position": {
                         "column": 47,
                         "row": 4
-                    }
+                    },
+                    "color": "#ff0000"
                 }
             },
             "buttons": {
