@@ -26,24 +26,24 @@ impl LedState {
     /// # Errors
     ///
     /// This function will return an error if scheduling the LED state fails.
-    pub async fn run_and_next(
+    pub async fn execute(
         self,
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
     ) -> Result<Self> {
         match self {
-            Self::FastAlternate => Self::run_and_next_fast_alternate(led0, led1, button).await,
-            Self::FastTogether => Self::run_and_next_fast_together(led0, led1, button).await,
-            Self::SlowAlternate => Self::run_and_next_slow_alternate(led0, led1, button).await,
-            Self::Sos => Self::run_and_next_sos(led0, led1, button).await,
-            Self::AlwaysOn => Self::run_and_next_always_on(led0, led1, button).await,
-            Self::AlwaysOff => Self::run_and_next_always_off(led0, led1, button).await,
+            Self::FastAlternate => Self::execute_fast_alternate(led0, led1, button).await,
+            Self::FastTogether => Self::execute_fast_together(led0, led1, button).await,
+            Self::SlowAlternate => Self::execute_slow_alternate(led0, led1, button).await,
+            Self::Sos => Self::execute_sos(led0, led1, button).await,
+            Self::AlwaysOn => Self::execute_always_on(led0, led1, button).await,
+            Self::AlwaysOff => Self::execute_always_off(led0, led1, button).await,
         }
     }
 
     #[inline]
-    async fn run_and_next_fast_alternate(
+    async fn execute_fast_alternate(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
@@ -57,7 +57,7 @@ impl LedState {
     }
 
     #[inline]
-    async fn run_and_next_fast_together(
+    async fn execute_fast_together(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
@@ -71,7 +71,7 @@ impl LedState {
     }
 
     #[inline]
-    async fn run_and_next_slow_alternate(
+    async fn execute_slow_alternate(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
@@ -85,7 +85,7 @@ impl LedState {
     }
 
     #[inline]
-    async fn run_and_next_sos(
+    async fn execute_sos(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
@@ -99,7 +99,7 @@ impl LedState {
     }
 
     #[inline]
-    async fn run_and_next_always_on(
+    async fn execute_always_on(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,
@@ -113,7 +113,7 @@ impl LedState {
     }
 
     #[inline]
-    async fn run_and_next_always_off(
+    async fn execute_always_off(
         led0: &mut Led<'_>,
         led1: &mut Led<'_>,
         button: &mut Button<'_>,

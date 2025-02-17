@@ -18,7 +18,7 @@ pub struct Led<'a> {
 )]
 pub type LedNotifier = Signal<CriticalSectionRawMutex, Schedule>;
 
-impl<'a> Led<'a> {
+impl Led<'_> {
     /// Create a new `Led`, which entails starting an Embassy task.
     ///
     /// # Arguments

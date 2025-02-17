@@ -43,7 +43,7 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     let mut state = LedState::default();
     loop {
         defmt::info!("State: {:?}", state);
-        state = state.run_and_next(&mut led0, &mut led1, &mut button).await?;
+        state = state.execute(&mut led0, &mut led1, &mut button).await?;
     }
 }
 
