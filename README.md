@@ -1,14 +1,20 @@
 # dua_blinka
 
-* Two virtual (and real) LEDs, working in parallel.
-* If you hold the button, the LEDs send SOS.
-* Each LED follows a schedule of on/off times. A schedule is a no_alloc Vec of Durations.
-* If you hold the button long enough, the LEDs will react before you
-   release.
+[![Rust Embedded](https://img.shields.io/badge/Rust-Embedded-blue?style=flat-square)](https://www.rust-lang.org/) [![Embassy](https://img.shields.io/badge/Framework-Embassy-orange?style=flat-square)](https://embassy.dev/)
 
-This project is based on <https://github.com/U007D/blinky_probe/tree/main> from the
-Embedded Rust Hardware Debug Probe workshop taught at the
-Seattle Rust User Group in November 2024.
+A Rust-based embedded example featuring virtual and real LEDs controlled with `Embassy`
+
+## Features
+
+- **Two virtual (and real) LEDs** working in parallel.
+- **SOS signal** when holding the button.
+- **Scheduled LED behavior** using a `no_alloc` Vec of `Durations`.
+- **Responsive input handling**—holding the button long enough triggers a reaction *before* release.
+
+## Related Article
+
+**[How Rust & Embassy Shine on Embedded Devices (Part 1): Insights for Everyone and Nine Rules for Embedded Programmers](https://medium.com/@carlmkadie/how-rust-embassy-shine-on-embedded-devices-part-1-9f4911c92007)**  
+by **Carl M. Kadie & Brad Gibson**, free on Medium.
 
 ## State Diagram
 
@@ -39,6 +45,6 @@ stateDiagram-v2
 
 Licensed under either:
 
-* MIT license (see LICENSE-MIT file)
-* Apache License, Version 2.0 (see LICENSE-APACHE file)
+- MIT license (see LICENSE-MIT file)
+- Apache License, Version 2.0 (see LICENSE-APACHE file)
   at your option.
