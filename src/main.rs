@@ -32,7 +32,7 @@ async fn inner_main(spawner: Spawner) -> Result<Never> {
     // Initialize the hardware.
     let hardware: lib::Hardware<'_> = lib::Hardware::default();
 
-    // Start virtual peripherals.
+    // Start abstract peripherals.
     static LED_NOTIFIER0: LedNotifier = Led::notifier();
     let mut led0 = Led::new(hardware.led0, &LED_NOTIFIER0, spawner)?;
     static LED_NOTIFIER1: LedNotifier = Led::notifier();

@@ -2,7 +2,7 @@
 
 [![Rust Embedded](https://img.shields.io/badge/Rust-Embedded-blue?style=flat-square)](https://www.rust-lang.org/) [![Embassy](https://img.shields.io/badge/Framework-Embassy-orange?style=flat-square)](https://embassy.dev/)
 
-A Rust-based embedded example featuring virtual and real LEDs controlled with `Embassy`
+A Rust-based embedded example featuring abstract and real LEDs controlled with `Embassy`
 
 ## Features
 
